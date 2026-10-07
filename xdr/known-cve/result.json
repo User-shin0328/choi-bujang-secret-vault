@@ -1,0 +1,155 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "known-cve",
+  "decisions": [
+    {
+      "alertId": "kc-01",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "CVE-2021-44228 형태 요청입니다. 머리글에 원격 조회 구문이 있습니다."
+    },
+    {
+      "alertId": "kc-02",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "CVE-2021-44228 형태 요청입니다. 주소 인자에 원격 조회 구문이 있습니다."
+    },
+    {
+      "alertId": "kc-03",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "같은 주소에서 CVE-2021-44228 형태가 6번 반복됐습니다."
+    },
+    {
+      "alertId": "kc-04",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "여러 머리글에 같은 CVE-2021-44228 표기가 있습니다."
+    },
+    {
+      "alertId": "kc-05",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "알려진 취약점 점검 흔적과 CVE-2021-44228 형태가 함께 있습니다."
+    },
+    {
+      "alertId": "kc-06",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "요청 인자의 원격 조회 구문이 8번 들어왔습니다."
+    },
+    {
+      "alertId": "kc-07",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "로그인 요청에 CVE-2021-44228 형태가 그대로 있습니다."
+    },
+    {
+      "alertId": "kc-08",
+      "action": "block",
+      "confidence": 0.95,
+      "reason": "같은 문서용 조회 구문이 머리글과 주소에 같이 있습니다."
+    },
+    {
+      "alertId": "kc-09",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "검색어에 CVE-2021-44228 이라는 글자만 있습니다. 조회 구문은 없습니다."
+    },
+    {
+      "alertId": "kc-10",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 노트에 jndi 라는 단어가 한 번 있습니다. 조회 구문은 없습니다."
+    },
+    {
+      "alertId": "kc-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "취약점 목록 문서를 한 번 열었습니다."
+    },
+    {
+      "alertId": "kc-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "머리글에 중괄호가 한 번 있습니다. 원격 조회 구문은 없습니다."
+    },
+    {
+      "alertId": "kc-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "점검 도구와 비슷한 수업용 프로그램 이름이 1건 있습니다."
+    },
+    {
+      "alertId": "kc-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "라이브러리 이름이 로그에 한 번 있습니다. 악용 구문은 없습니다."
+    },
+    {
+      "alertId": "kc-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "조회 형태가 잘린 글자가 1건 있습니다. 완전한 구문은 아닙니다."
+    },
+    {
+      "alertId": "kc-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "같은 주소에서 취약점 이름 검색이 2건입니다. 악용 구문은 없습니다."
+    },
+    {
+      "alertId": "kc-17",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "공개 화면을 열었습니다."
+    },
+    {
+      "alertId": "kc-18",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "상태 확인 주소가 열렸습니다."
+    },
+    {
+      "alertId": "kc-19",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그인이 성공했습니다."
+    },
+    {
+      "alertId": "kc-20",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "정적 스타일 파일을 받았습니다."
+    },
+    {
+      "alertId": "kc-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "내 메모를 조회했습니다."
+    },
+    {
+      "alertId": "kc-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "세션 유지를 확인했습니다."
+    },
+    {
+      "alertId": "kc-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "반 공지를 조회했습니다."
+    },
+    {
+      "alertId": "kc-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃했습니다."
+    }
+  ],
+  "counts": {
+    "block": 8,
+    "alert": 8,
+    "record": 8
+  }
+}

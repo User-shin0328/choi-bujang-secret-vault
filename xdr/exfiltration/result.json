@@ -1,0 +1,191 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "exfiltration",
+  "decisions": [
+    {
+      "alertId": "ex-01",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "10분 안에 자료 200건이 처음 보는 목적지로 나갔습니다."
+    },
+    {
+      "alertId": "ex-02",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "수업 시간 밖에 압축 파일이 처음 보는 주소로 나갔습니다."
+    },
+    {
+      "alertId": "ex-03",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 목적지로 대용량 전송이 8번 반복됐습니다."
+    },
+    {
+      "alertId": "ex-04",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "평소에 쓰지 않던 포트로 자료 이름이 연속 전송됐습니다."
+    },
+    {
+      "alertId": "ex-05",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "처음 보는 목적지로 메모 묶음이 한 번에 나갔습니다."
+    },
+    {
+      "alertId": "ex-06",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "업무 시간 밖에 같은 목적지로 전송이 15번입니다."
+    },
+    {
+      "alertId": "ex-07",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "압축 파일 3개가 연속으로 처음 보는 주소에 올라갔습니다."
+    },
+    {
+      "alertId": "ex-08",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "짧은 시간에 자료실 전체가 외부 주소로 복사됐습니다."
+    },
+    {
+      "alertId": "ex-09",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "명령 통로로 큰 파일이 처음 보는 목적지에 반복 전송됐습니다."
+    },
+    {
+      "alertId": "ex-10",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "처음 보는 목적지 두 곳으로 같은 압축 파일이 나갔습니다."
+    },
+    {
+      "alertId": "ex-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "중간 크기 파일 1건이 평소와 다른 주소로 나갔습니다."
+    },
+    {
+      "alertId": "ex-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "전송량이 평소보다 한 번 높습니다. 목적지는 수업 자료 주소입니다."
+    },
+    {
+      "alertId": "ex-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 시간에 압축 파일 1건을 만들었습니다. 외부 전송은 아직 없습니다."
+    },
+    {
+      "alertId": "ex-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "처음 보는 주소로 작은 파일이 2건 나갔습니다."
+    },
+    {
+      "alertId": "ex-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "자료 20건이 한 번에 읽힌 뒤 전송은 1건입니다."
+    },
+    {
+      "alertId": "ex-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 끝 무렵 백업처럼 보이는 전송이 1건 있습니다."
+    },
+    {
+      "alertId": "ex-17",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "평소 목적지인데 파일 수가 한 번 늘었습니다."
+    },
+    {
+      "alertId": "ex-18",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "전송이 실패 1건으로 끝났습니다. 목적지는 처음 봅니다."
+    },
+    {
+      "alertId": "ex-19",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "명령 통로에 짧은 자료 이름이 3번 보였습니다. 큰 파일은 아닙니다."
+    },
+    {
+      "alertId": "ex-20",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "압축 파일을 연 뒤 일부만 다른 주소로 나갔습니다."
+    },
+    {
+      "alertId": "ex-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "내 메모 한 건을 읽었습니다."
+    },
+    {
+      "alertId": "ex-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "반 공지를 읽었습니다."
+    },
+    {
+      "alertId": "ex-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "수업 자료 주소로 작은 동기화가 끝났습니다."
+    },
+    {
+      "alertId": "ex-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "검색 결과 한 페이지를 받았습니다."
+    },
+    {
+      "alertId": "ex-25",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "화면 새로고침입니다."
+    },
+    {
+      "alertId": "ex-26",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "내 메모를 저장했습니다. 목적지는 자료실입니다."
+    },
+    {
+      "alertId": "ex-27",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "첨부 그림 한 장을 열었습니다."
+    },
+    {
+      "alertId": "ex-28",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "세션 확인입니다. 파일 전송은 없습니다."
+    },
+    {
+      "alertId": "ex-29",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃했습니다."
+    },
+    {
+      "alertId": "ex-30",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "다음 수업 공지를 읽었습니다."
+    }
+  ],
+  "counts": {
+    "block": 10,
+    "alert": 10,
+    "record": 10
+  }
+}

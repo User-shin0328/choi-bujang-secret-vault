@@ -1,0 +1,167 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "privilege",
+  "decisions": [
+    {
+      "alertId": "pv-01",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "user01 이 원격 주소에서 관리자 그룹에 추가됐습니다."
+    },
+    {
+      "alertId": "pv-02",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "방금 관리자가 된 user01 이 관리자 명령을 실행했습니다."
+    },
+    {
+      "alertId": "pv-03",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "수업 시간 밖에 user02 가 처음 보는 주소에서 관리자 명령을 실행했습니다."
+    },
+    {
+      "alertId": "pv-04",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "평범한 계정 user03 이 관리자 그룹에 들어가고 곧바로 권한 명령을 실행했습니다."
+    },
+    {
+      "alertId": "pv-05",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 주소에서 계정 4개가 관리자 그룹에 추가됐습니다."
+    },
+    {
+      "alertId": "pv-06",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "user05 세션이 관리자 권한으로 바뀌었고 요청 주소는 처음 봅니다."
+    },
+    {
+      "alertId": "pv-07",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "업무처럼 보이지 않는 시각에 관리자 그룹 추가와 명령 실행이 같이 있습니다."
+    },
+    {
+      "alertId": "pv-08",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "user07 이 다른 계정의 권한으로 관리자 명령을 실행했습니다."
+    },
+    {
+      "alertId": "pv-09",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "관리자 그룹에서 빠진 계정이 1분 뒤에 다시 관리자로 들어왔습니다."
+    },
+    {
+      "alertId": "pv-10",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 시간에 권한 상승 창이 한 번 뜨고 취소됐습니다."
+    },
+    {
+      "alertId": "pv-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "user02 가 과제 그룹에 추가됐습니다. 관리자 그룹은 아닙니다."
+    },
+    {
+      "alertId": "pv-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "평소 주소에서 관리자 명령이 한 번 실행됐습니다."
+    },
+    {
+      "alertId": "pv-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "user04 가 자기 계정 종류를 조회한 뒤 변경은 없습니다."
+    },
+    {
+      "alertId": "pv-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 중 권한 상승이 1건 있고 이어서 명령은 없습니다."
+    },
+    {
+      "alertId": "pv-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "새 로컬 그룹이 하나 만들어졌습니다. 멤버는 user06 한 명입니다."
+    },
+    {
+      "alertId": "pv-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "관리자 명령이 실패 1건으로 끝났습니다."
+    },
+    {
+      "alertId": "pv-17",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "그룹 목록을 읽은 뒤 수업 그룹 설명만 바뀌었습니다."
+    },
+    {
+      "alertId": "pv-18",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "user01 이 로그인했습니다."
+    },
+    {
+      "alertId": "pv-19",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "그룹 소속을 읽기만 했습니다."
+    },
+    {
+      "alertId": "pv-20",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "비밀번호를 변경했습니다."
+    },
+    {
+      "alertId": "pv-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "수업용 관리 계정 admin01 이 평소 주소에서 로그인했습니다."
+    },
+    {
+      "alertId": "pv-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "admin01 이 로그아웃했습니다."
+    },
+    {
+      "alertId": "pv-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "자기 세션 정보를 조회했습니다."
+    },
+    {
+      "alertId": "pv-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "자료실을 열었습니다."
+    },
+    {
+      "alertId": "pv-25",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "svc-lab 이 평소 예약 작업을 확인했습니다."
+    },
+    {
+      "alertId": "pv-26",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃했습니다."
+    }
+  ],
+  "counts": {
+    "block": 9,
+    "alert": 8,
+    "record": 9
+  }
+}

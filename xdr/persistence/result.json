@@ -1,0 +1,155 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "persistence",
+  "decisions": [
+    {
+      "alertId": "ps-01",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "서명 없는 새 서비스가 임시 폴더의 실행 파일을 가리킵니다."
+    },
+    {
+      "alertId": "ps-02",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "처음 보는 예약 작업이 임시 폴더의 프로그램을 수업 시간 밖에 실행합니다."
+    },
+    {
+      "alertId": "ps-03",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "시작 폴더에 평소 목록에 없는 프로그램이 추가됐습니다."
+    },
+    {
+      "alertId": "ps-04",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "원격 주소에서 서명 없는 서비스 등록이 연속으로 3건입니다."
+    },
+    {
+      "alertId": "ps-05",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "예약 작업 이름이 임의 문자열이고 실행 파일이 임시 폴더에 있습니다."
+    },
+    {
+      "alertId": "ps-06",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "서비스 실행 파일이 바뀌었고 서명이 없습니다."
+    },
+    {
+      "alertId": "ps-07",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "시작 프로그램과 예약 작업이 같은 임시 파일을 함께 가리킵니다."
+    },
+    {
+      "alertId": "ps-08",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "평소 목록에 없는 서비스가 다시 켜도 남도록 등록됐습니다."
+    },
+    {
+      "alertId": "ps-09",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "user01 이 수업 중 예약 작업을 하나 만들었습니다. 서명은 확인되지 않았습니다."
+    },
+    {
+      "alertId": "ps-10",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "시작 항목에 수업 도구 이름이 하나 있습니다. 서명은 아직 모릅니다."
+    },
+    {
+      "alertId": "ps-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "서비스 설명만 한 번 바뀌었습니다. 실행 파일은 그대로입니다."
+    },
+    {
+      "alertId": "ps-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "예약 작업이 하나 있고 실행 시각은 수업 시간입니다."
+    },
+    {
+      "alertId": "ps-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "임시 폴더에 실행 파일이 하나 생겼습니다. 서비스 등록은 없습니다."
+    },
+    {
+      "alertId": "ps-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "시작 폴더 변경이 1건입니다. 이어서 실행된 기록은 없습니다."
+    },
+    {
+      "alertId": "ps-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "예약 작업 이름이 수업 과제와 비슷하고 만든 사람은 user07 입니다."
+    },
+    {
+      "alertId": "ps-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "서비스가 한 번 멈췄다가 같은 파일로 다시 시작됐습니다."
+    },
+    {
+      "alertId": "ps-17",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그인했습니다."
+    },
+    {
+      "alertId": "ps-18",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "운영체제 업데이트 예약이 평소 시각에 그대로입니다."
+    },
+    {
+      "alertId": "ps-19",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "기존 수업 도구 서비스가 서명된 채로 실행 중입니다."
+    },
+    {
+      "alertId": "ps-20",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "시작 프로그램 목록을 읽기만 했습니다."
+    },
+    {
+      "alertId": "ps-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "정의 업데이트가 평소 저장소에서 끝났습니다."
+    },
+    {
+      "alertId": "ps-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃했습니다."
+    },
+    {
+      "alertId": "ps-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "기존 예약 작업이 수업 자료 복사를 마쳤습니다."
+    },
+    {
+      "alertId": "ps-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "자료실 화면이 열렸습니다."
+    }
+  ],
+  "counts": {
+    "block": 8,
+    "alert": 8,
+    "record": 8
+  }
+}

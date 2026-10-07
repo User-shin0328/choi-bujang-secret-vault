@@ -1,0 +1,179 @@
+{
+  "schema": "aleph.xdr.result.v1",
+  "moduleKey": "brute-force",
+  "decisions": [
+    {
+      "alertId": "bf-01",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 주소에서 2분 안에 로그인 실패 48건이 쌓였습니다."
+    },
+    {
+      "alertId": "bf-02",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 주소가 여러 계정에 같은 비밀번호를 연속으로 넣었습니다."
+    },
+    {
+      "alertId": "bf-03",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "3분 동안 로그인 실패 36건이 있고, 계정 이름을 바꿔 가며 시도했습니다."
+    },
+    {
+      "alertId": "bf-04",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "한 계정에 2분 안 로그인 실패가 52건입니다. 성공은 없습니다."
+    },
+    {
+      "alertId": "bf-05",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 주소가 계정 20개에 같은 간격으로 로그인 실패를 넣었습니다."
+    },
+    {
+      "alertId": "bf-06",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "1분 안에 로그인 실패 61건이 같은 주소에 쌓였습니다."
+    },
+    {
+      "alertId": "bf-07",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "비밀번호를 한 글자씩 바꿔 넣는 실패가 40건입니다."
+    },
+    {
+      "alertId": "bf-08",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "같은 주소와 같은 계정에서 로그인 실패 70건이 이어졌습니다."
+    },
+    {
+      "alertId": "bf-09",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "서로 다른 계정 15개에 같은 비밀번호 실패가 이어졌습니다."
+    },
+    {
+      "alertId": "bf-10",
+      "action": "block",
+      "confidence": 0.9,
+      "reason": "로그인 실패 90건이 있고 성공은 없습니다."
+    },
+    {
+      "alertId": "bf-11",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "같은 계정 로그인 실패 4건 뒤에 성공했습니다."
+    },
+    {
+      "alertId": "bf-12",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "5분 동안 로그인 실패 6건이 있고 그 뒤 성공했습니다."
+    },
+    {
+      "alertId": "bf-13",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "평소와 다른 주소에서 로그인 실패가 3건입니다."
+    },
+    {
+      "alertId": "bf-14",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "10분 동안 한 계정의 로그인 실패가 5건입니다."
+    },
+    {
+      "alertId": "bf-15",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "두 계정에 실패가 2건씩 있고 주소는 같습니다."
+    },
+    {
+      "alertId": "bf-16",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "비밀번호 변경 화면에서 현재 비밀번호 실패가 3건입니다."
+    },
+    {
+      "alertId": "bf-17",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "수업 시작 무렵 로그인 실패 4건 뒤에 성공했습니다."
+    },
+    {
+      "alertId": "bf-18",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "한 주소에서 실패 8건이 있고 간격은 고르지 않습니다."
+    },
+    {
+      "alertId": "bf-19",
+      "action": "alert",
+      "confidence": 0.6,
+      "reason": "잠금 뒤에 다시 넣은 실패가 3건입니다."
+    },
+    {
+      "alertId": "bf-20",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그인이 성공했습니다."
+    },
+    {
+      "alertId": "bf-21",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃했습니다."
+    },
+    {
+      "alertId": "bf-22",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그인 실패 1건 뒤에 성공했습니다."
+    },
+    {
+      "alertId": "bf-23",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "비밀번호 변경이 성공했습니다."
+    },
+    {
+      "alertId": "bf-24",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "세션 유지를 확인했습니다."
+    },
+    {
+      "alertId": "bf-25",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "자료실 화면이 열렸습니다."
+    },
+    {
+      "alertId": "bf-26",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "평소 주소에서 로그인이 성공했습니다."
+    },
+    {
+      "alertId": "bf-27",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그인 상태가 유지되고 있습니다."
+    },
+    {
+      "alertId": "bf-28",
+      "action": "record",
+      "confidence": 0.1,
+      "reason": "로그아웃한 뒤 다시 로그인이 성공했습니다."
+    }
+  ],
+  "counts": {
+    "block": 10,
+    "alert": 9,
+    "record": 9
+  }
+}
