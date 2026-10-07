@@ -80,9 +80,39 @@
    npm run bundle
    ```
 
-### 3단계의 남은 취약점 (4단계 해결 예정)
-- 현재 서버 API는 로그인 여부(인증)만 확인할 뿐, 단건 메모 수정(PUT) 및 삭제(DELETE) 시 해당 메모의 실제 소유자(`owner_id`)와 요청자의 일치 여부를 검증하지 않습니다. 따라서 로그인한 사용자 B가 사용자 A의 메모를 수정하거나 삭제할 수 있는 허점이 남아 있으며, 이는 4단계에서 소유자 접근 제어로 차단할 예정입니다.
+### 3단계의 남은 취약점 (4단계에서 해결 완료)
+- 3단계에서는 로그인 여부(인증)만 확인하여 타인의 메모 ID를 아는 경우 수정/삭제가 가능한 취약점이 남아 있었습니다. 이 문제는 4단계의 소유자 기반 접근 제어와 DB RLS로 해결되었습니다.
 
+## 4단계: 로그인해도 내 자료만 보이게 합니다
+
+4단계에서는 사용자별 소유자 식별자(`owner_id`)를 기반으로 단건 조회, 목록 조회, 메모 추가, 수정, 삭제 전반에 걸쳐 수평적 권한 상승(IDOR) 방어 및 데이터베이스 RLS를 적용했습니다.
+
+### 현재 작동하는 기능
+1. **API 소유자 검증 및 IDOR 방어 (`/api/notes`)**:
+   - `GET /api/notes`: 인증된 토큰의 `userId`와 DB `owner_id`가 일치하는 메모 목록만 반환 (타인 메모 노출 방지).
+   - `GET /api/notes/:id`: 대상 메모의 `owner_id`가 본인 `userId`와 일치할 때만 `{id, title, body}` 반환 (타인 메모 요청 시 `403 Forbidden`).
+   - `POST /api/notes`: 클라이언트의 임의 `owner_id` 입력을 무시하고 검증된 토큰의 `userId`로 강제 저장.
+   - `PUT /api/notes/:id`: 기존 행의 `owner_id` 검증과 함께 요청 본문의 소유자 변경 시도를 차단(`403 Forbidden`), 본인 메모만 제목·내용 갱신 허용.
+   - `DELETE /api/notes/:id`: 기존 행의 `owner_id`가 본인인 경우에만 삭제 허용(`{id, deleted: true}`), 타인 메모 삭제 시도 시 `403 Forbidden` 거부.
+2. **Supabase DB 행 수준 보안 (RLS) 및 최소 권한**:
+   - `public.notes` 테이블에 `ROW LEVEL SECURITY` 활성화.
+   - `anon` 및 `public` 역할의 모든 권한을 회수(`REVOKE ALL`)하고 `authenticated` 역할에만 CRUD 최소 권한 부여.
+   - `auth.uid() = owner_id` 조건 기반의 SELECT/INSERT/UPDATE/DELETE 정책 4종을 적용하여 DB 엔진 수준에서 타인 행 접근 및 변조 원천 차단.
+
+### 다시 실행하고 확인하는 방법
+1. 로컬 빌드 및 시험:
+   ```bash
+   npm run build -- --local
+   npm run test:r5
+   ```
+2. 배포 주소 직접 확인:
+   - 비인가 요청 차단: `curl -i https://choi-bujang-secret-vault-amber.vercel.app/api/notes` -> `HTTP 401`
+   - 타인 메모 접근 차단: 사용자 B의 토큰으로 사용자 A의 메모 ID 단건 조회/수정/삭제 요청 시 -> `HTTP 403`
+   - 브라우저 화면: `https://choi-bujang-secret-vault-amber.vercel.app/`에서 A와 B 계정으로 각각 로그인하여 상호 간 메모가 분리되어 노출되고 본인 메모만 정상 CRUD 되는지 확인
+3. 제출 묶음 생성:
+   ```bash
+   npm run bundle
+   ```
 
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
