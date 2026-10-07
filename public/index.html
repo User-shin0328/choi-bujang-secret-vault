@@ -150,13 +150,23 @@
 
     // 로그인
     document.getElementById('btn-login').addEventListener('click', async () => {
-      authStatus.textContent = '로그인 중...';
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        authStatus.style.color = '#f87171';
+        authStatus.textContent = '이메일과 비밀번호를 모두 입력해 주세요.';
+        return;
+      }
+      authStatus.style.color = '#94a3b8';
+      authStatus.textContent = '로그인 중...';
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         authStatus.style.color = '#f87171';
-        authStatus.textContent = '로그인 실패: ' + error.message;
+        if (error.message.includes('Email not confirmed')) {
+          authStatus.textContent = '이메일 인증 대기 중: Supabase 대시보드(Authentication > Providers > Email)에서 Confirm email을 끄시거나, Users 탭에서 Auto Confirm 계정을 생성하세요.';
+        } else {
+          authStatus.textContent = '로그인 실패: ' + error.message;
+        }
       } else {
         authStatus.textContent = '';
         updateAuthUI(data.session.access_token, data.user?.email);
@@ -165,17 +175,32 @@
 
     // 회원가입
     document.getElementById('btn-signup').addEventListener('click', async () => {
-      authStatus.textContent = '회원가입 요청 중...';
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        authStatus.style.color = '#f87171';
+        authStatus.textContent = '회원가입할 이메일과 비밀번호를 모두 입력해 주세요.';
+        return;
+      }
+      authStatus.style.color = '#94a3b8';
+      authStatus.textContent = '회원가입 요청 중...';
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         authStatus.style.color = '#f87171';
-        authStatus.textContent = '회원가입 실패: ' + error.message;
+        if (error.message.includes('Anonymous')) {
+          authStatus.textContent = '이메일 주소를 입력해 주세요. 빈 칸으로 가입할 수 없습니다.';
+        } else if (error.message.includes('invalid')) {
+          authStatus.textContent = '유효한 이메일 형식(예: user@gmail.com)을 입력해 주세요.';
+        } else {
+          authStatus.textContent = '회원가입 실패: ' + error.message;
+        }
+      } else if (!data.session) {
+        authStatus.style.color = '#fbbf24';
+        authStatus.textContent = '가입 완료(확인 대기): Supabase 대시보드에서 Confirm email을 끄시면 이메일 확인 없이 즉시 로그인할 수 있습니다.';
       } else {
         authStatus.style.color = '#4ade80';
-        authStatus.textContent = '가입 완료! 자동 로그인되거나 확인 메일을 확인하세요.';
-        if (data.session) updateAuthUI(data.session.access_token, data.user?.email);
+        authStatus.textContent = '가입 및 로그인 완료!';
+        updateAuthUI(data.session.access_token, data.user?.email);
       }
     });
 
