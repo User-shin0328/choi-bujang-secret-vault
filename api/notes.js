@@ -89,11 +89,15 @@ export default async function handler(request, response) {
         try {
           const { data: note, error } = await supabase
             .from('notes')
-            .select('id, title, content')
+            .select('id, title, content, owner_id')
             .eq('id', id)
             .maybeSingle();
 
           if (!error && note) {
+            // 타인의 메모인 경우 403 거부
+            if (note.owner_id !== authUser.userId) {
+              return response.status(403).json({ error: 'FORBIDDEN' });
+            }
             return response.status(200).json({
               id: note.id,
               title: note.title,
@@ -110,6 +114,9 @@ export default async function handler(request, response) {
       if (!memNote) {
         return response.status(404).json({ error: 'NOTE_NOT_FOUND' });
       }
+      if (memNote.owner_id !== authUser.userId) {
+        return response.status(403).json({ error: 'FORBIDDEN' });
+      }
       return response.status(200).json({
         id: memNote.id,
         title: memNote.title,
@@ -118,13 +125,14 @@ export default async function handler(request, response) {
     }
 
     // 3. 목록 GET (/api/notes)
+    // 본인이 소유한 메모만 조회
     if (method === 'GET') {
       if (supabase) {
         try {
           const { data, error } = await supabase
             .from('notes')
             .select('id, title, content, owner_id, created_at')
-            .or(`owner_id.eq.${authUser.userId},owner_id.is.null`)
+            .eq('owner_id', authUser.userId)
             .order('created_at', { ascending: true });
 
           if (!error && Array.isArray(data)) {
@@ -139,16 +147,18 @@ export default async function handler(request, response) {
       }
 
       const list = Array.from(memoryNotes.values())
-        .filter(n => !n.owner_id || n.owner_id === authUser.userId)
+        .filter(n => n.owner_id === authUser.userId)
         .map(n => ({ id: n.id, title: n.title, body: n.body ?? '' }));
       return response.status(200).json(list);
     }
 
     // 4. 추가 POST (/api/notes)
+    // 클라이언트의 owner_id는 신뢰하지 않고 검증된 authUser.userId로 강제 설정
     if (method === 'POST') {
       const noteId = bodyData.id || randomUUID();
       const title = bodyData.title ?? '';
       const bodyText = bodyData.body ?? bodyData.content ?? '';
+      const ownerId = authUser.userId;
 
       if (supabase) {
         try {
@@ -156,12 +166,12 @@ export default async function handler(request, response) {
             id: noteId,
             title,
             content: bodyText,
-            owner_id: authUser.userId,
+            owner_id: ownerId,
           });
         } catch { /* fallback to memory */ }
       }
 
-      memoryNotes.set(noteId, { id: noteId, title, body: bodyText, owner_id: authUser.userId });
+      memoryNotes.set(noteId, { id: noteId, title, body: bodyText, owner_id: ownerId });
 
       if (!bodyData.id) {
         return response.status(201).json({ id: noteId });
@@ -170,33 +180,54 @@ export default async function handler(request, response) {
     }
 
     // 5. 수정 PUT (/api/notes/:id)
+    // 기존 행과 새 행의 소유자가 모두 본인인지 확인
     if (method === 'PUT') {
       if (!id) {
         return response.status(400).json({ error: 'MISSING_NOTE_ID' });
       }
 
-      const updateTitle = bodyData.title;
-      const updateBody = bodyData.body !== undefined ? bodyData.body : bodyData.content;
+      // 본문으로 owner_id를 타인으로 변경하려는 시도 차단
+      if (bodyData.owner_id && bodyData.owner_id !== authUser.userId) {
+        return response.status(403).json({ error: 'FORBIDDEN' });
+      }
 
       if (supabase) {
         try {
-          const updateData = {};
-          if (updateTitle !== undefined) updateData.title = updateTitle;
-          if (updateBody !== undefined) updateData.content = updateBody;
-
-          const { data: updated, error } = await supabase
+          // 기존 행의 소유자 확인
+          const { data: existing, error: findErr } = await supabase
             .from('notes')
-            .update(updateData)
+            .select('id, owner_id')
             .eq('id', id)
-            .select('id, title, content')
             .maybeSingle();
 
-          if (!error && updated) {
-            return response.status(200).json({
-              id: updated.id,
-              title: updated.title,
-              body: updated.content ?? '',
-            });
+          if (!findErr && !existing) {
+            return response.status(404).json({ error: 'NOTE_NOT_FOUND' });
+          }
+          if (!findErr && existing) {
+            if (existing.owner_id !== authUser.userId) {
+              return response.status(403).json({ error: 'FORBIDDEN' });
+            }
+
+            const updateData = {};
+            if (bodyData.title !== undefined) updateData.title = bodyData.title;
+            if (bodyData.body !== undefined) updateData.content = bodyData.body;
+            else if (bodyData.content !== undefined) updateData.content = bodyData.content;
+            updateData.owner_id = authUser.userId;
+
+            const { data: updated, error: updateErr } = await supabase
+              .from('notes')
+              .update(updateData)
+              .eq('id', id)
+              .select('id, title, content')
+              .maybeSingle();
+
+            if (!updateErr && updated) {
+              return response.status(200).json({
+                id: updated.id,
+                title: updated.title,
+                body: updated.content ?? '',
+              });
+            }
           }
         } catch { /* fallback to memory */ }
       }
@@ -205,8 +236,14 @@ export default async function handler(request, response) {
       if (!existing) {
         return response.status(404).json({ error: 'NOTE_NOT_FOUND' });
       }
-      if (updateTitle !== undefined) existing.title = updateTitle;
-      if (updateBody !== undefined) existing.body = updateBody;
+      if (existing.owner_id !== authUser.userId) {
+        return response.status(403).json({ error: 'FORBIDDEN' });
+      }
+
+      if (bodyData.title !== undefined) existing.title = bodyData.title;
+      if (bodyData.body !== undefined) existing.body = bodyData.body;
+      else if (bodyData.content !== undefined) existing.body = bodyData.content;
+      existing.owner_id = authUser.userId;
 
       return response.status(200).json({
         id: existing.id,
@@ -216,6 +253,7 @@ export default async function handler(request, response) {
     }
 
     // 6. 삭제 DELETE (/api/notes/:id)
+    // 본인 소유 메모만 삭제 허용
     if (method === 'DELETE') {
       if (!id) {
         return response.status(400).json({ error: 'MISSING_NOTE_ID' });
@@ -223,8 +261,39 @@ export default async function handler(request, response) {
 
       if (supabase) {
         try {
-          await supabase.from('notes').delete().eq('id', id);
+          const { data: existing, error: findErr } = await supabase
+            .from('notes')
+            .select('id, owner_id')
+            .eq('id', id)
+            .maybeSingle();
+
+          if (!findErr && !existing) {
+            return response.status(404).json({ error: 'NOTE_NOT_FOUND' });
+          }
+          if (!findErr && existing) {
+            if (existing.owner_id !== authUser.userId) {
+              return response.status(403).json({ error: 'FORBIDDEN' });
+            }
+
+            const { error: delErr } = await supabase
+              .from('notes')
+              .delete()
+              .eq('id', id);
+
+            if (!delErr) {
+              memoryNotes.delete(id);
+              return response.status(200).json({ id, deleted: true });
+            }
+          }
         } catch { /* fallback to memory */ }
+      }
+
+      const existing = memoryNotes.get(id);
+      if (!existing) {
+        return response.status(404).json({ error: 'NOTE_NOT_FOUND' });
+      }
+      if (existing.owner_id !== authUser.userId) {
+        return response.status(403).json({ error: 'FORBIDDEN' });
       }
 
       memoryNotes.delete(id);
