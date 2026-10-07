@@ -56,3 +56,89 @@ SELECT n.id, n.title, n.owner_id, u.email as owner_email
 FROM public.notes n
 LEFT JOIN auth.users u ON n.owner_id = u.id
 ORDER BY n.created_at ASC;
+
+-- ==============================================================================
+-- 4단계: 메모 테이블(public.notes) RLS 및 최소 권한(Least Privilege) SQL
+-- ==============================================================================
+
+-- [검증 1] 적용 전 권한 상태 확인
+SELECT grantee, table_schema, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name = 'notes'
+  AND grantee IN ('anon', 'authenticated', 'public')
+ORDER BY grantee, privilege_type;
+
+SELECT
+  role_name,
+  has_table_privilege(role_name, 'public.notes', 'SELECT') AS can_select,
+  has_table_privilege(role_name, 'public.notes', 'INSERT') AS can_insert,
+  has_table_privilege(role_name, 'public.notes', 'UPDATE') AS can_update,
+  has_table_privilege(role_name, 'public.notes', 'DELETE') AS can_delete
+FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name);
+
+-- 1. 기존 권한 전면 회수 (PUBLIC, anon, authenticated)
+REVOKE ALL ON TABLE public.notes FROM PUBLIC, anon, authenticated;
+
+-- 2. authenticated 역할에 최소 CRUD 권한 부여 (SELECT, INSERT, UPDATE, DELETE)
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.notes TO authenticated;
+
+-- 3. RLS(Row Level Security) 활성화 보장
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
+-- 기존 정책 중복 방지를 위한 정리
+DROP POLICY IF EXISTS "notes_select_policy" ON public.notes;
+DROP POLICY IF EXISTS "notes_insert_policy" ON public.notes;
+DROP POLICY IF EXISTS "notes_update_policy" ON public.notes;
+DROP POLICY IF EXISTS "notes_delete_policy" ON public.notes;
+
+-- 4. RLS 정책 정의 (auth.uid() = owner_id 조건)
+-- (1) SELECT: 기존 행 USING 검사
+CREATE POLICY "notes_select_policy"
+ON public.notes
+FOR SELECT
+TO authenticated
+USING (auth.uid() = owner_id);
+
+-- (2) INSERT: 새 행 WITH CHECK 검사
+CREATE POLICY "notes_insert_policy"
+ON public.notes
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = owner_id);
+
+-- (3) UPDATE: 기존 행 USING 및 새 행 WITH CHECK 검사
+CREATE POLICY "notes_update_policy"
+ON public.notes
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = owner_id)
+WITH CHECK (auth.uid() = owner_id);
+
+-- (4) DELETE: 기존 행 USING 검사
+CREATE POLICY "notes_delete_policy"
+ON public.notes
+FOR DELETE
+TO authenticated
+USING (auth.uid() = owner_id);
+
+-- [검증 2] 적용 후 권한 및 RLS 정책 상태 확인
+SELECT grantee, table_schema, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name = 'notes'
+  AND grantee IN ('anon', 'authenticated', 'public')
+ORDER BY grantee, privilege_type;
+
+SELECT
+  role_name,
+  has_table_privilege(role_name, 'public.notes', 'SELECT') AS can_select,
+  has_table_privilege(role_name, 'public.notes', 'INSERT') AS can_insert,
+  has_table_privilege(role_name, 'public.notes', 'UPDATE') AS can_update,
+  has_table_privilege(role_name, 'public.notes', 'DELETE') AS can_delete
+FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name);
+
+SELECT schemaname, tablename, policyname, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename = 'notes'
+ORDER BY policyname;
