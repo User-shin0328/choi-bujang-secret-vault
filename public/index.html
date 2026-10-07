@@ -191,6 +191,8 @@
           authStatus.textContent = '이메일 주소를 입력해 주세요. 빈 칸으로 가입할 수 없습니다.';
         } else if (error.message.includes('invalid')) {
           authStatus.textContent = '유효한 이메일 형식(예: user@gmail.com)을 입력해 주세요.';
+        } else if (error.message.includes('rate limit')) {
+          authStatus.textContent = '이메일 발송 한도 초과: Supabase 대시보드(Authentication > Providers > Email)에서 [Confirm email] 스위치를 끄시면(OFF) 이메일 발송 없이 즉시 가입 및 로그인이 가능합니다.';
         } else {
           authStatus.textContent = '회원가입 실패: ' + error.message;
         }
