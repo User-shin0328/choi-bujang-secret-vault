@@ -48,6 +48,41 @@
 - **과거 노출 관련 한계**:
   - 최신 파일과 새 배포에서 문장을 제거했더라도, **이전 공개 Git 커밋 이력과 이전 Vercel 배포 버전이 남아 있는 한 과거의 자료 노출이 완전히 해소되었다고 볼 수 없습니다.** (실제 자료였다면 커밋 영구 삭제, 비밀값 폐기 및 재발급 등의 추가 대응이 필요함)
 
+## 3단계: 진짜 로그인과 가상 메모 관리
+
+3단계에서는 Supabase Auth 연동을 통해 사용자 인증을 적용하고, 서버리스 API(`/api/notes`)에서 Authorization Bearer 토큰을 검증하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **토큰 기반 인증 검증**:
+   - `src/verify-login.mjs`의 verifier를 연결하여 요청 헤더의 JWT 서명을 검증합니다.
+   - 브라우저가 전달한 임의의 `userId`나 `role`은 무시하고 서명된 토큰 결과만 신뢰합니다.
+   - 토큰이 없거나 유효하지 않은 비인가 요청은 자료 없이 즉각 `401 Unauthorized`로 거부됩니다.
+2. **가상 메모 CRUD API**:
+   - `GET /api/notes`: 로그인 사용자의 메모 목록 반환
+   - `POST /api/notes`: `{id, title, body}`를 수신하고 검증된 `userId`를 `owner_id`로 저장 (id 미지정 시 UUID 자동 생성)
+   - `GET /api/notes/:id`: 단건 메모 `{id, title, body}` 반환 (미존재 시 404)
+   - `PUT /api/notes/:id`: 단건 메모 수정 (3단계에서는 아직 타인 메모 소유권 검사를 하지 않음)
+   - `DELETE /api/notes/:id`: 단건 메모 삭제 (삭제 후 단건 GET 요청 시 404)
+3. **사용자 화면**:
+   - Supabase Auth를 통한 로그인/로그아웃 및 가상 메모 추가·수정·삭제 인터페이스 지원
+
+### 다시 실행하고 확인하는 방법
+1. 로컬 빌드 및 시험:
+   ```bash
+   npm run build -- --local
+   npm run test:r5
+   ```
+2. 배포 주소 직접 확인:
+   - 비인가 요청 차단: `curl -i https://choi-bujang-secret-vault-amber.vercel.app/api/notes` -> `HTTP 401`
+   - 브라우저 화면: `https://choi-bujang-secret-vault-amber.vercel.app/`에서 로그인 후 메모 추가/수정/삭제 동작 확인
+3. 제출 묶음 생성:
+   ```bash
+   npm run bundle
+   ```
+
+### 3단계의 남은 취약점 (4단계 해결 예정)
+- 현재 서버 API는 로그인 여부(인증)만 확인할 뿐, 단건 메모 수정(PUT) 및 삭제(DELETE) 시 해당 메모의 실제 소유자(`owner_id`)와 요청자의 일치 여부를 검증하지 않습니다. 따라서 로그인한 사용자 B가 사용자 A의 메모를 수정하거나 삭제할 수 있는 허점이 남아 있으며, 이는 4단계에서 소유자 접근 제어로 차단할 예정입니다.
+
 
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
