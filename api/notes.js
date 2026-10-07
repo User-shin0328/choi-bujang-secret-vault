@@ -24,17 +24,17 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   }
 
+  // 1. 요청 토큰 검사: 브라우저가 보낸 userId·role은 신뢰하지 않고 토큰 유무부터 확인
+  const authHeader = request.headers.authorization;
+  if (!authHeader) {
+    return response.status(401).json({ error: 'UNAUTHORIZED' });
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL || config.identityProvider?.issuer?.replace(/\/auth\/v1$/u, '');
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseSecretKey || !config?.identityProvider) {
     return response.status(500).json({ error: 'SERVER_CONFIG_MISSING' });
-  }
-
-  // 1. 요청 토큰 검사: 브라우저가 보낸 userId·role은 신뢰하지 않고 토큰 서명만 검증
-  const authHeader = request.headers.authorization;
-  if (!authHeader) {
-    return response.status(401).json({ error: 'UNAUTHORIZED' });
   }
 
   let authUser;
