@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -30,6 +30,132 @@ export async function runAttackChecks(config) {
     }
     return [{ attackId: 'anonymous_note_read', expected: '비로그인 화면에서 가상 메모를 확인',
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
+  }
+
+  if (config.step === 5) {
+    const results = [];
+
+    // 1. 비로그인 목록 조회 거부 점검
+    const listRes = await fetch(new URL('/api/notes', app), {
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'anonymous_notes_list_denied',
+      expected: '토큰 없는 비로그인 목록 조회는 401로 거부됨',
+      observed: listRes.status === 401
+        ? '비로그인 GET /api/notes 요청에 HTTP 401 반환; 목록 접근 차단됨'
+        : `비로그인 목록 응답 HTTP ${listRes.status}; 예상과 다름`,
+    });
+
+    // 2. 비로그인 메모 작성 거부 점검
+    const postRes = await fetch(new URL('/api/notes', app), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '공격', body: '비인가 작성' }),
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'anonymous_note_create_denied',
+      expected: '토큰 없는 비로그인 메모 추가는 401로 거부됨',
+      observed: postRes.status === 401
+        ? '비로그인 POST /api/notes 요청에 HTTP 401 반환; 추가 차단됨'
+        : `비로그인 작성 응답 HTTP ${postRes.status}; 예상과 다름`,
+    });
+
+    // 3. 비로그인 단건 메모 조회 거부 점검
+    const itemRes = await fetch(new URL('/api/notes/non-existent-id', app), {
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'anonymous_note_item_denied',
+      expected: '토큰 없는 비로그인 단건 메모 조회는 401로 거부됨',
+      observed: itemRes.status === 401
+        ? '비로그인 GET /api/notes/:id 요청에 HTTP 401 반환; 단건 조회 차단됨'
+        : `비로그인 단건 응답 HTTP ${itemRes.status}; 예상과 다름`,
+    });
+
+    // 4. 비로그인 메모 수정 거부 점검
+    const putRes = await fetch(new URL('/api/notes/test-target-id', app), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '변조시도', body: '변조내용' }),
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'anonymous_note_put_denied',
+      expected: '토큰 없는 비로그인 메모 수정은 401로 거부됨',
+      observed: putRes.status === 401
+        ? '비로그인 PUT /api/notes/:id 요청에 HTTP 401 반환; 수정 차단됨'
+        : `비로그인 수정 응답 HTTP ${putRes.status}; 예상과 다름`,
+    });
+
+    // 5. 비로그인 메모 삭제 거부 점검
+    const delRes = await fetch(new URL('/api/notes/test-target-id', app), {
+      method: 'DELETE',
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'anonymous_note_delete_denied',
+      expected: '토큰 없는 비로그인 메모 삭제는 401로 거부됨',
+      observed: delRes.status === 401
+        ? '비로그인 DELETE /api/notes/:id 요청에 HTTP 401 반환; 삭제 차단됨'
+        : `비로그인 삭제 응답 HTTP ${delRes.status}; 예상과 다름`,
+    });
+
+    // 6. 위조 토큰 접근 거부 점검
+    const fakeTokenRes = await fetch(new URL('/api/notes', app), {
+      headers: { 'Authorization': 'Bearer invalid-token' },
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    results.push({
+      attackId: 'invalid_token_access_denied',
+      expected: '서명되지 않은 위조 토큰 요청은 401로 거부됨',
+      observed: fakeTokenRes.status === 401
+        ? '위조 토큰 요청에 HTTP 401 반환; 비인가 토큰 차단됨'
+        : `위조 토큰 응답 HTTP ${fakeTokenRes.status}; 예상과 다름`,
+    });
+
+    // 7. 정적 /data.json 메모 0건 확인
+    const dataResponse = await fetch(new URL('/data.json', app), {
+      redirect: 'error', signal: AbortSignal.timeout(10000),
+    });
+    let notes = null;
+    if (dataResponse.ok) {
+      try {
+        const data = await dataResponse.json();
+        notes = data?.notes;
+      } catch {
+        notes = null;
+      }
+    }
+    const staticNotesEmpty = Array.isArray(notes) && notes.length === 0;
+    results.push({
+      attackId: 'anonymous_static_note_read',
+      expected: '비로그인 정적 파일에서 가상 메모가 보이지 않음',
+      observed: staticNotesEmpty
+        ? '비로그인 /data.json에서 메모 0건 확인'
+        : `비로그인 /data.json에서 메모가 제거되지 않음 (HTTP ${dataResponse.status})`,
+    });
+
+    // 8. 원본 API 직접 접근 차단 점검
+    let origStatus = 0;
+    try {
+      const origRes = await fetch(config.originalApiUrl, {
+        redirect: 'error', signal: AbortSignal.timeout(10000),
+      });
+      origStatus = origRes.status;
+    } catch {
+      origStatus = 0;
+    }
+    results.push({
+      attackId: 'original_api_direct_access_denied',
+      expected: '원본 DB API 직접 요청은 거부됨',
+      observed: (origStatus === 401 || origStatus === 403 || origStatus === 404)
+        ? `원본 API 직접 요청 시 HTTP ${origStatus} 반환; 비인가 직접 접근 차단됨`
+        : `원본 API 직접 요청 응답 HTTP ${origStatus}; 예상과 다름`,
+    });
+
+    return results;
   }
 
   if (config.step === 4) {

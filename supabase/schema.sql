@@ -142,3 +142,51 @@ SELECT schemaname, tablename, policyname, roles, cmd, qual, with_check
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'notes'
 ORDER BY policyname;
+
+-- ==============================================================================
+-- 5단계: 자료 요청을 서버 한곳으로 모으기 (직접 DB 접근 권한 전면 회수)
+-- PUBLIC, anon, authenticated의 직접 권한을 모두 회수하고,
+-- 서버 함수(service_role)를 통해서만 자료 접근이 가능하도록 설정합니다.
+-- ==============================================================================
+
+-- [적용 전 확인] 현재 권한 상태 조회
+SELECT grantee, table_schema, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name = 'notes'
+  AND grantee IN ('anon', 'authenticated', 'public')
+ORDER BY grantee, privilege_type;
+
+SELECT
+  role_name,
+  has_table_privilege(role_name, 'public.notes', 'SELECT') AS can_select,
+  has_table_privilege(role_name, 'public.notes', 'INSERT') AS can_insert,
+  has_table_privilege(role_name, 'public.notes', 'UPDATE') AS can_update,
+  has_table_privilege(role_name, 'public.notes', 'DELETE') AS can_delete
+FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name);
+
+-- 1. 학습용 메모 테이블의 PUBLIC, anon, authenticated 직접 권한 전면 회수
+REVOKE ALL ON TABLE public.notes FROM PUBLIC, anon, authenticated;
+
+-- 2. 서버 전용(service_role) 권한 유지 보장
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.notes TO service_role;
+
+-- 3. RLS 활성화 상태 유지
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
+-- [적용 후 확인] 직접 권한 회수 결과 조회 (anon, authenticated 모두 false 및 grants 0건이어야 함)
+SELECT grantee, table_schema, table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND table_name = 'notes'
+  AND grantee IN ('anon', 'authenticated', 'public')
+ORDER BY grantee, privilege_type;
+
+SELECT
+  role_name,
+  has_table_privilege(role_name, 'public.notes', 'SELECT') AS can_select,
+  has_table_privilege(role_name, 'public.notes', 'INSERT') AS can_insert,
+  has_table_privilege(role_name, 'public.notes', 'UPDATE') AS can_update,
+  has_table_privilege(role_name, 'public.notes', 'DELETE') AS can_delete
+FROM (VALUES ('anon'), ('authenticated')) AS roles(role_name);
+

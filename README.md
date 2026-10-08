@@ -114,6 +114,35 @@
    npm run bundle
    ```
 
+## 5단계: 자료 요청을 서버 한곳으로 모읍니다
+
+5단계에서는 클라이언트가 데이터베이스에 직접 접근하는 경로를 완전히 차단하고, 모든 자료 요청을 검증된 서버 함수(`/api/notes`)로 일원화했습니다.
+
+### 현재 작동하는 기능
+1. **원본 자료 API 주소 분리 (`originalApiUrl`) 및 서버 함수 일원화**:
+   - `aleph.config.json`의 `originalApiUrl`에 쿼리가 없는 원본 Supabase REST 엔드포인트를 등록했습니다.
+   - 브라우저 클라이언트가 데이터베이스에 직접 쿼리하거나 수정하는 코드를 배제하고, 모든 메모 CRUD 요청은 서버리스 함수(`/api/notes`)를 통해서만 수행되도록 집중화했습니다.
+2. **학습용 데이터베이스 직접 권한 전면 회수 (`REVOKE ALL`)**:
+   - `public.notes` 테이블에 대해 `PUBLIC`, `anon`, `authenticated` 역할의 모든 권한을 회수하여 브라우저 공용 키(`anon`)나 로그인 토큰을 이용한 PostgREST 직접 조회를 원천 차단했습니다.
+   - 서버 함수에서 사용하는 서버 전용 역할(`service_role`)에만 최소 권한(SELECT, INSERT, UPDATE, DELETE)을 유지했습니다.
+3. **서버 함수 수준의 엄격한 로그인 및 소유자 검증 유지**:
+   - `/api/notes`는 토큰 서명 검증(`verifyLogin`)을 거치며, 요청자 본인(`owner_id === authUser.userId`)의 데이터에 대해서만 읽기·추가·수정·삭제를 허용합니다.
+
+### 다시 실행하고 확인하는 방법
+1. 로컬 빌드 및 시험:
+   ```bash
+   npm run build -- --local
+   npm run test:r5
+   ```
+2. 배포 주소 직접 확인:
+   - 비인가 요청 차단: `curl -i https://choi-bujang-secret-vault-amber.vercel.app/api/notes` -> `HTTP 401`
+   - 원본 API 직접 접근 차단: anon 키 없이 또는 anon 키로 `https://nolhrriuxhuhgduekyae.supabase.co/rest/v1/notes` 요청 시 차단 확인
+   - 브라우저 화면: `https://choi-bujang-secret-vault-amber.vercel.app/`에서 A 사용자 로그인 후 메모 목록 조회, 추가, 수정, 삭제가 정상 작동하는지 확인
+3. 제출 묶음 생성:
+   ```bash
+   npm run bundle
+   ```
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
