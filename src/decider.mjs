@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 export const RULE_IDS = Object.freeze([
   'starter.deny',
   'xdr.brute_force.deny',
+  'xdr.web_injection.deny',
 ]);
 
 const DENY_RULES_PATH = resolve(import.meta.dirname, '..', 'xdr', 'deny-rules.json');
@@ -60,12 +61,15 @@ export async function decide(request) {
   });
 
   if (matched) {
+    const activeRuleId = matched.ruleId && RULE_IDS.includes(matched.ruleId)
+      ? matched.ruleId
+      : 'xdr.web_injection.deny';
     return {
       schema: 'aleph.decision.v1',
       requestId: request.requestId,
       decision: 'deny',
       reasonCode: 'xdr_blocked',
-      ruleIds: ['xdr.brute_force.deny'],
+      ruleIds: [activeRuleId],
     };
   }
 

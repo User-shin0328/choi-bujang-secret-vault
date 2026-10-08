@@ -78,5 +78,69 @@
     "ip": "203.0.113.40",
     "user": "user06",
     "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-01",
+    "expiresAt": "2026-10-09T03:50:36.143Z",
+    "ip": "203.0.113.10",
+    "user": "",
+    "reason": "요청 인자 내 SQL 구문 연속 주입"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-02",
+    "expiresAt": "2026-10-09T03:50:36.145Z",
+    "ip": "203.0.113.10",
+    "user": "",
+    "reason": "스크립트 태그 및 코드 삽입 표기 반복"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-03",
+    "expiresAt": "2026-10-09T03:50:36.146Z",
+    "ip": "198.51.100.15",
+    "user": "",
+    "reason": "경로 거슬러 올라가기(../)를 통한 파일 경로 이탈 반복"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-04",
+    "expiresAt": "2026-10-09T03:50:36.147Z",
+    "ip": "192.0.2.15",
+    "user": "",
+    "reason": "요청 인자 내 SQL 구문 연속 주입"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-05",
+    "expiresAt": "2026-10-09T03:50:36.148Z",
+    "ip": "203.0.113.18",
+    "user": "",
+    "reason": "스크립트 태그 및 코드 삽입 표기 반복"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-06",
+    "expiresAt": "2026-10-09T03:50:36.149Z",
+    "ip": "198.51.100.18",
+    "user": "",
+    "reason": "요청 인자 내 SQL 구문 연속 주입"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-07",
+    "expiresAt": "2026-10-09T03:50:36.150Z",
+    "ip": "192.0.2.21",
+    "user": "",
+    "reason": "경로 거슬러 올라가기(../)를 통한 파일 경로 이탈 반복"
+  },
+  {
+    "ruleId": "xdr.web_injection.deny",
+    "alertId": "wi-08",
+    "expiresAt": "2026-10-09T03:50:36.151Z",
+    "ip": "203.0.113.22",
+    "user": "",
+    "reason": "요청 인자 내 SQL 구문 연속 주입"
   }
 ]
