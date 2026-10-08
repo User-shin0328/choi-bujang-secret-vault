@@ -96,12 +96,6 @@
   </main>
 
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-    const SUPABASE_URL = 'https://nolhrriuxhuhgduekyae.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_YRJgWCiyxTxGvM81uZZu-w_66OxefD8';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     let currentToken = null;
 
     const loggedOutView = document.getElementById('logged-out-view');
@@ -117,14 +111,18 @@
     function updateAuthUI(token, userEmail) {
       currentToken = token;
       if (token) {
+        sessionStorage.setItem('aleph_token', token);
+        if (userEmail) sessionStorage.setItem('aleph_email', userEmail);
         loggedOutView.style.display = 'none';
         loggedInView.style.display = 'block';
         createPanel.style.display = 'block';
         btnRefresh.style.display = 'inline-block';
         authWarning.style.display = 'none';
-        userDisplay.textContent = `로그인 계정: ${userEmail || '인증된 사용자'}`;
+        userDisplay.textContent = `로그인 계정: ${userEmail || sessionStorage.getItem('aleph_email') || '인증된 사용자'}`;
         loadNotes();
       } else {
+        sessionStorage.removeItem('aleph_token');
+        sessionStorage.removeItem('aleph_email');
         loggedOutView.style.display = 'block';
         loggedInView.style.display = 'none';
         createPanel.style.display = 'none';
@@ -134,19 +132,11 @@
       }
     }
 
-    // 세션 초기화
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData?.session) {
-      updateAuthUI(sessionData.session.access_token, sessionData.session.user?.email);
+    // 세션 복원
+    const savedToken = sessionStorage.getItem('aleph_token');
+    if (savedToken) {
+      updateAuthUI(savedToken, sessionStorage.getItem('aleph_email'));
     }
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        updateAuthUI(session.access_token, session.user?.email);
-      } else if (!document.getElementById('manual-token').value.trim()) {
-        updateAuthUI(null, null);
-      }
-    });
 
     // 로그인
     document.getElementById('btn-login').addEventListener('click', async () => {
@@ -159,19 +149,23 @@
       }
       authStatus.style.color = '#94a3b8';
       authStatus.textContent = '로그인 중...';
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        authStatus.style.color = '#f87171';
-        if (error.message.includes('Email not confirmed')) {
-          authStatus.textContent = '이메일 인증 대기 중: Supabase 대시보드(Authentication > Providers > Email)에서 Confirm email을 끄시거나, Users 탭에서 Auto Confirm 계정을 생성하세요.';
-        } else if (error.message.includes('Invalid login credentials')) {
-          authStatus.textContent = '로그인 실패 (Invalid credentials): 이메일/비밀번호가 다르거나 이메일 인증이 완료되지 않았습니다. Supabase SQL Editor에서 UPDATE auth.users SET email_confirmed_at = now(); 를 실행하거나 계정 생성 시 Auto Confirm을 체크해 주세요.';
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authStatus.style.color = '#f87171';
+          authStatus.textContent = '로그인 실패: ' + (data.error || '인증 오류');
         } else {
-          authStatus.textContent = '로그인 실패: ' + error.message;
+          authStatus.textContent = '';
+          updateAuthUI(data.token, data.user?.email || email);
         }
-      } else {
-        authStatus.textContent = '';
-        updateAuthUI(data.session.access_token, data.user?.email);
+      } catch (err) {
+        authStatus.style.color = '#f87171';
+        authStatus.textContent = '로그인 요청 실패: ' + err.message;
       }
     });
 
@@ -186,25 +180,27 @@
       }
       authStatus.style.color = '#94a3b8';
       authStatus.textContent = '회원가입 요청 중...';
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        authStatus.style.color = '#f87171';
-        if (error.message.includes('Anonymous')) {
-          authStatus.textContent = '이메일 주소를 입력해 주세요. 빈 칸으로 가입할 수 없습니다.';
-        } else if (error.message.includes('invalid')) {
-          authStatus.textContent = '유효한 이메일 형식(예: user@gmail.com)을 입력해 주세요.';
-        } else if (error.message.includes('rate limit')) {
-          authStatus.textContent = '이메일 발송 한도 초과: Supabase 대시보드(Authentication > Providers > Email)에서 [Confirm email] 스위치를 끄시면(OFF) 이메일 발송 없이 즉시 가입 및 로그인이 가능합니다.';
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'signup', email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authStatus.style.color = '#f87171';
+          authStatus.textContent = '회원가입 실패: ' + (data.error || '가입 오류');
+        } else if (!data.token) {
+          authStatus.style.color = '#fbbf24';
+          authStatus.textContent = '가입 완료(확인 대기): Supabase 대시보드에서 Confirm email을 끄시면 이메일 확인 없이 즉시 로그인할 수 있습니다.';
         } else {
-          authStatus.textContent = '회원가입 실패: ' + error.message;
+          authStatus.style.color = '#4ade80';
+          authStatus.textContent = '가입 및 로그인 완료!';
+          updateAuthUI(data.token, data.user?.email || email);
         }
-      } else if (!data.session) {
-        authStatus.style.color = '#fbbf24';
-        authStatus.textContent = '가입 완료(확인 대기): Supabase 대시보드에서 Confirm email을 끄시면 이메일 확인 없이 즉시 로그인할 수 있습니다.';
-      } else {
-        authStatus.style.color = '#4ade80';
-        authStatus.textContent = '가입 및 로그인 완료!';
-        updateAuthUI(data.session.access_token, data.user?.email);
+      } catch (err) {
+        authStatus.style.color = '#f87171';
+        authStatus.textContent = '회원가입 요청 실패: ' + err.message;
       }
     });
 
@@ -217,8 +213,7 @@
     });
 
     // 로그아웃
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-      await supabase.auth.signOut();
+    document.getElementById('btn-logout').addEventListener('click', () => {
       document.getElementById('manual-token').value = '';
       updateAuthUI(null, null);
     });
