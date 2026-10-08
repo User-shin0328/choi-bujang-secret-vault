@@ -143,6 +143,31 @@
    npm run bundle
    ```
 
+## 보너스 1: 무차별 로그인 공격을 잡아 냅니다 (XDR)
+
+보너스 1단계에서는 Wazuh 로그인 실패 경보를 분석하여 MITRE ATT&CK T1110 무차별 대입 공격을 탐지하고, 차단 후보를 ZTNA 판정기 거부 규칙으로 연동하며 알림 로그를 기록하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **경보 추출 및 패턴 매칭**:
+   - `xdr/brute-force/read-alerts.mjs`: Wazuh 경보 목록에서 시각, 출발 IP, 계정, 규칙 수준, 설명을 추출하며 토큰/비밀키 등 민감값은 마스킹 처리합니다.
+   - `xdr/brute-force/patterns.json`: T1110 기반 고빈도 실패, 패스워드 스프레이, 변형 비밀번호 대입 패턴을 정의합니다.
+2. **공격 판단 모듈 (`xdr/brute-force/decide.mjs`)**:
+   - 확신도 0.85 이상(레벨 10 이상): `block` (명확한 공격 10건)
+   - 확신도 0.5 이상: `alert` (애매한 시도 9건, Jev 미응답 시 alert 폴백)
+   - 확신도 0.5 미만: `record` (정상 이벤트 9건)
+3. **ZTNA 판정기 연동 및 알림 기록**:
+   - 차단 후보(`block`)는 만료 시각(24시간)과 근거 경보 번호(`alertId`)를 부여받아 `xdr/deny-rules.json` 및 `src/decider.mjs`의 `xdr.brute_force.deny` 규칙으로 등록됩니다.
+   - 정상 이벤트(`record`)는 거부 규칙에 일체 등록되지 않아 정상 사용자가 차단되지 않습니다.
+   - 알림은 `xdr/alerts.log`에 한 줄씩 기록됩니다.
+
+### 다시 실행하고 확인하는 방법
+```bash
+npm run xdr:run -- brute-force
+```
+- 결과 파일: `xdr/brute-force/result.json` (block: 10, alert: 9, record: 9)
+- 알림 로그: `xdr/alerts.log`
+- 거부 규칙: `xdr/deny-rules.json`
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.

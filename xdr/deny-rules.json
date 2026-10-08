@@ -1,0 +1,82 @@
+[
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-01",
+    "expiresAt": "2026-10-09T01:29:08.181Z",
+    "ip": "203.0.113.10",
+    "user": "user01",
+    "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-02",
+    "expiresAt": "2026-10-09T01:29:08.183Z",
+    "ip": "203.0.113.10",
+    "user": "user01",
+    "reason": "다수 계정 대상 동일 비밀번호 연속 대입 (패스워드 스프레이)"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-03",
+    "expiresAt": "2026-10-09T01:29:08.184Z",
+    "ip": "198.51.100.20",
+    "user": "user02",
+    "reason": "규칙적 변형 비밀번호 연속 대입 시도"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-04",
+    "expiresAt": "2026-10-09T01:29:08.185Z",
+    "ip": "192.0.2.30",
+    "user": "user02",
+    "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-05",
+    "expiresAt": "2026-10-09T01:29:08.186Z",
+    "ip": "203.0.113.21",
+    "user": "user03",
+    "reason": "규칙적 변형 비밀번호 연속 대입 시도"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-06",
+    "expiresAt": "2026-10-09T01:29:08.187Z",
+    "ip": "198.51.100.44",
+    "user": "user03",
+    "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-07",
+    "expiresAt": "2026-10-09T01:29:08.188Z",
+    "ip": "203.0.113.15",
+    "user": "user04",
+    "reason": "규칙적 변형 비밀번호 연속 대입 시도"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-08",
+    "expiresAt": "2026-10-09T01:29:08.189Z",
+    "ip": "192.0.2.18",
+    "user": "user05",
+    "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-09",
+    "expiresAt": "2026-10-09T01:29:08.190Z",
+    "ip": "198.51.100.8",
+    "user": "user06",
+    "reason": "다수 계정 대상 동일 비밀번호 연속 대입 (패스워드 스프레이)"
+  },
+  {
+    "ruleId": "xdr.brute_force.deny",
+    "alertId": "bf-10",
+    "expiresAt": "2026-10-09T01:29:08.191Z",
+    "ip": "203.0.113.40",
+    "user": "user06",
+    "reason": "단일 출발 주소의 고빈도 연속 로그인 실패"
+  }
+]
