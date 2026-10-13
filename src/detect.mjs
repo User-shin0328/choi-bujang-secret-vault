@@ -156,12 +156,22 @@ export function detect(events) {
           }
         }
 
-        // 지역 하나만으로 확정하지 않으며, 10분 내 120건 초과 다량 조회 + 복합 조건 충족 시 회수 제안
-        return {
+        // 구간 내 확인된 가상 기기 식별 (한 개로 한정)
+        const targetDevice = windowItems.find(i => i.event.deviceId)?.event.deviceId || null;
+
+        /** @type {{ action: 'propose_revocation', reasonCode: string, subject: string, device?: string, deviceId?: string }} */
+        const proposal = {
           action: 'propose_revocation',
           reasonCode: 'burst_read',
           subject,
         };
+
+        if (targetDevice) {
+          proposal.device = targetDevice;
+          proposal.deviceId = targetDevice;
+        }
+
+        return proposal;
       }
     }
   }
