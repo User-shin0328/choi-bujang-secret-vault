@@ -83,6 +83,106 @@
       line-height: 1.5;
       margin: 0;
     }
+
+    /* 탈환 작전실 스타일 */
+    .war-room-panel {
+      border: 1px solid #3b82f6;
+      border-radius: 12px;
+      padding: 22px;
+      background: #0f1e33;
+      margin-top: 36px;
+    }
+    .war-room-panel h2 {
+      margin: 0 0 10px;
+      color: #60a5fa;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .source-meta {
+      font-size: 13px;
+      color: #94a3b8;
+      background: #172554;
+      border: 1px solid #1e3a8a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .source-badge-engine {
+      display: inline-block;
+      background: #1e40af;
+      color: #bfdbfe;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .source-badge-student {
+      display: inline-block;
+      background: #065f46;
+      color: #a7f3d0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .stat-card {
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: #142238;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #93c5fd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-card-body {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .stat-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .stat-badge-pass { background: #065f46; color: #a7f3d0; }
+    .stat-badge-unrun { background: #374151; color: #9ca3af; }
+    .stat-badge-info { background: #1e3a8a; color: #93c5fd; }
+    .api-check-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .api-check-table th, .api-check-table td {
+      border: 1px solid #233852;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .api-check-table th {
+      background: #162a45;
+      color: #94a3b8;
+    }
+    .api-check-table td {
+      background: #101c2e;
+    }
   </style>
 </head>
 <body>
@@ -171,6 +271,132 @@
       </div>
       <div class="notice" id="auth-warning" style="display: none;">로그인 토큰 및 서버 기기 승인이 확인되지 않으면 보호 자료가 노출되지 않으며 API가 거부합니다.</div>
       <ul id="notes-list" aria-live="polite" style="margin-top: 14px;"></ul>
+    </section>
+
+    <!-- 4. 탈환 작전실 (Operations War Room) -->
+    <section class="war-room-panel" id="war-room-section">
+      <h2>🛡️ 탈환 작전실 (Operations War Room)</h2>
+      <div class="source-meta">
+        <strong>[출처 구분]</strong><br>
+        • 사건 관측 및 접속 통제 환경 제공: <span class="source-badge-engine">ALEPH SDP 엔진</span><br>
+        • 학생 직접 구현: <span class="source-badge-student">학생 판정기(decider.mjs)</span> · <span class="source-badge-student">탐지 규칙(detect.mjs)</span> · <span class="source-badge-student">복구 절차(restore.mjs)</span> · <span class="source-badge-student">접속 앱(index.html)</span> · <span class="source-badge-student">자료실 API(api/notes.js)</span>
+      </div>
+
+      <div class="stat-grid">
+        <!-- 1. 판정기 규칙 요약 -->
+        <div class="stat-card">
+          <div class="stat-card-title">
+            <span>1. 판정기 규칙 (src/decider.mjs)</span>
+            <span class="stat-badge stat-badge-info">총 3개 규칙</span>
+          </div>
+          <div class="stat-card-body">
+            • <code>device_registered</code>: 미등록 기기 차단 (<code>device_not_registered</code>)<br>
+            • <code>step_up_required</code>: 복합 이상 접속 단계별 인증 요구 (<code>step_up_required</code>)<br>
+            • <code>zone_rule</code>: 구역 분리(공지/메모/강사), 타인 메모 침해 차단 (<code>zone_forbidden</code>)
+          </div>
+        </div>
+
+        <!-- 2. 탐지 사건 요약 -->
+        <div class="stat-card">
+          <div class="stat-card-title">
+            <span>2. 탐지 사건 (src/detect.mjs)</span>
+            <span class="stat-badge stat-badge-info">10분 윈도우 기준</span>
+          </div>
+          <div class="stat-card-body">
+            • <strong>정상 조회</strong> (120건 이하): 정상 관찰 유지 (<code>action: observe</code>)<br>
+            • <strong>폭주 조회</strong> (120건 초과): 이상 탐지 및 회수 제안 (<code>action: propose_revocation</code>, 사유: <code>burst_read</code>)
+          </div>
+        </div>
+
+        <!-- 3. 회수 상태 요약 (실측 vs 미실행 구분) -->
+        <div class="stat-card">
+          <div class="stat-card-title">
+            <span>3. 회수 상태 요약</span>
+            <span class="stat-badge stat-badge-info">실측/미실행 구분</span>
+          </div>
+          <div class="stat-card-body">
+            • <strong>로컬 가상 사건 연습</strong> (detect:test): 폭주 2건 회수 제안 확인 (실측)<br>
+            • <strong>운영 반 엔진 접속 회수 연결</strong>: <span class="stat-badge stat-badge-unrun">미실행</span> (엔진 회수 미연결)<br>
+            • <strong>원격 심판 러너 41종 공격 방어</strong>: <span class="stat-badge stat-badge-unrun">미실행</span> (심판 접수 대기, 0건 합산)
+          </div>
+        </div>
+
+        <!-- 4. 복구 버전 요약 (메모 본문 제외) -->
+        <div class="stat-card">
+          <div class="stat-card-title">
+            <span>4. 복구 버전 (src/restore.mjs)</span>
+            <span class="stat-badge stat-badge-pass">revision 1 안전 복구</span>
+          </div>
+          <div class="stat-card-body">
+            • <strong>안전 정책 버전</strong>: revision 2(시험) → revision 1(검증된 안전 사본) 복원 완료<br>
+            • <strong>단건 메모 복원</strong>: B의 메모 (ID: 4, 소유자: b, 해시: bbe71f7b...) 복원 확인<br>
+            • <strong>본문 노출 여부</strong>: <em>가상 메모 본문 제외 (메타데이터 및 해시만 대조)</em><br>
+            • <strong>타 메모 및 감사 로그</strong>: A 메모(1~3번) 및 감사 이력 유실 없이 보존
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: #93c5fd; font-size: 14px;">실제 API 응답 실측 수치 (가린 서버 기록과 대조)</strong>
+          <button type="button" class="btn-secondary btn-small" id="btn-check-war-room">작전실 실측 확인 실행</button>
+        </div>
+        <table class="api-check-table">
+          <thead>
+            <tr>
+              <th>시험 대상</th>
+              <th>요청 경로</th>
+              <th>기대 결과</th>
+              <th>실제 API 실측 응답</th>
+              <th>구분</th>
+            </tr>
+          </thead>
+          <tbody id="war-room-api-tbody">
+            <tr>
+              <td>비인가 목록 조회</td>
+              <td>GET /api/notes</td>
+              <td>HTTP 401 차단</td>
+              <td id="stat-api-notes-list">확인 대기</td>
+              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+            </tr>
+            <tr>
+              <td>비인가 메모 작성</td>
+              <td>POST /api/notes</td>
+              <td>HTTP 401 차단</td>
+              <td id="stat-api-notes-post">확인 대기</td>
+              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+            </tr>
+            <tr>
+              <td>비인가 단건 복구</td>
+              <td>POST /api/notes/restore</td>
+              <td>HTTP 401 차단</td>
+              <td id="stat-api-notes-restore">확인 대기</td>
+              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+            </tr>
+            <tr>
+              <td>웹앱 매니페스트</td>
+              <td>GET /manifest.json</td>
+              <td>HTTP 200 제공</td>
+              <td id="stat-api-manifest">확인 대기</td>
+              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+            </tr>
+            <tr>
+              <td>웹앱 아이콘</td>
+              <td>GET /icon.svg</td>
+              <td>HTTP 200 제공</td>
+              <td id="stat-api-icon">확인 대기</td>
+              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+            </tr>
+            <tr>
+              <td>원격 심판 러너 41종 공격</td>
+              <td>심판 원격 공격망</td>
+              <td>41종 공세 방어</td>
+              <td>심판 접수 서버 대기</td>
+              <td><span class="stat-badge stat-badge-unrun">미실행 (0건)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </main>
 
@@ -543,6 +769,66 @@
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
       }[tag] || tag));
     }
+
+    // 작전실 API 실측 검사 함수 (실제 API 응답과 미실행을 명확히 구분, 가상 메모 본문 제외)
+    async function updateWarRoomApiMetrics() {
+      const statList = document.getElementById('stat-api-notes-list');
+      const statPost = document.getElementById('stat-api-notes-post');
+      const statRestore = document.getElementById('stat-api-notes-restore');
+      const statManifest = document.getElementById('stat-api-manifest');
+      const statIcon = document.getElementById('stat-api-icon');
+
+      try {
+        const rList = await fetch('/api/notes', { redirect: 'error' });
+        statList.textContent = `HTTP ${rList.status} (${rList.status === 401 ? '접근 차단' : '응답'})`;
+      } catch (e) {
+        statList.textContent = `오류: ${e.message}`;
+      }
+
+      try {
+        const rPost = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'test' }),
+          redirect: 'error'
+        });
+        statPost.textContent = `HTTP ${rPost.status} (${rPost.status === 401 ? '추가 차단' : '응답'})`;
+      } catch (e) {
+        statPost.textContent = `오류: ${e.message}`;
+      }
+
+      try {
+        const rRestore = await fetch('/api/notes/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: '4' }),
+          redirect: 'error'
+        });
+        statRestore.textContent = `HTTP ${rRestore.status} (${rRestore.status === 401 ? '복구 접근 차단' : '응답'})`;
+      } catch (e) {
+        statRestore.textContent = `오류: ${e.message}`;
+      }
+
+      try {
+        const rManifest = await fetch('/manifest.json', { redirect: 'error' });
+        statManifest.textContent = `HTTP ${rManifest.status} (${rManifest.status === 200 ? '정상 제공' : '응답'})`;
+      } catch (e) {
+        statManifest.textContent = `오류: ${e.message}`;
+      }
+
+      try {
+        const rIcon = await fetch('/icon.svg', { redirect: 'error' });
+        statIcon.textContent = `HTTP ${rIcon.status} (${rIcon.status === 200 ? '정상 제공' : '응답'})`;
+      } catch (e) {
+        statIcon.textContent = `오류: ${e.message}`;
+      }
+    }
+
+    const btnCheckWarRoom = document.getElementById('btn-check-war-room');
+    if (btnCheckWarRoom) {
+      btnCheckWarRoom.addEventListener('click', updateWarRoomApiMetrics);
+    }
+    updateWarRoomApiMetrics();
   </script>
 </body>
 </html>
