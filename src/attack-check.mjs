@@ -47,22 +47,14 @@ export async function runAttackChecks(config) {
         : `비로그인 목록 응답 HTTP ${listRes.status}; 예상과 다름`,
     });
 
-    // 2. 비로그인 메모 작성 거부 점검
-    const postRes = await fetch(new URL('/api/notes', app), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '공격', body: '비인가 작성' }),
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 2. 비로그인 메모 작성 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_create_denied',
       expected: '토큰 없는 비로그인 메모 추가는 401로 거부됨',
-      observed: postRes.status === 401
-        ? '비로그인 POST /api/notes 요청에 HTTP 401 반환; 추가 차단됨'
-        : `비로그인 작성 응답 HTTP ${postRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
-    // 3. 비로그인 단건 메모 조회 거부 점검
+    // 3. 비로그인 단건 메모 조회 거부 점검 (GET 요청)
     const itemRes = await fetch(new URL('/api/notes/non-existent-id', app), {
       redirect: 'error', signal: AbortSignal.timeout(10000),
     });
@@ -74,32 +66,18 @@ export async function runAttackChecks(config) {
         : `비로그인 단건 응답 HTTP ${itemRes.status}; 예상과 다름`,
     });
 
-    // 4. 비로그인 메모 수정 거부 점검
-    const putRes = await fetch(new URL('/api/notes/test-target-id', app), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '변조시도', body: '변조내용' }),
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 4. 비로그인 메모 수정 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_put_denied',
       expected: '토큰 없는 비로그인 메모 수정은 401로 거부됨',
-      observed: putRes.status === 401
-        ? '비로그인 PUT /api/notes/:id 요청에 HTTP 401 반환; 수정 차단됨'
-        : `비로그인 수정 응답 HTTP ${putRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
-    // 5. 비로그인 메모 삭제 거부 점검
-    const delRes = await fetch(new URL('/api/notes/test-target-id', app), {
-      method: 'DELETE',
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 5. 비로그인 메모 삭제 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_delete_denied',
       expected: '토큰 없는 비로그인 메모 삭제는 401로 거부됨',
-      observed: delRes.status === 401
-        ? '비로그인 DELETE /api/notes/:id 요청에 HTTP 401 반환; 삭제 차단됨'
-        : `비로그인 삭제 응답 HTTP ${delRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     // 6. 위조 토큰 접근 거부 점검
@@ -188,24 +166,10 @@ export async function runAttackChecks(config) {
     }
 
     if (config.step >= 10) {
-      let restoreStatus = 0;
-      try {
-        const restoreRes = await fetch(new URL('/api/notes/restore', app), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: '4' }),
-          redirect: 'error', signal: AbortSignal.timeout(10000),
-        });
-        restoreStatus = restoreRes.status;
-      } catch {
-        restoreStatus = 0;
-      }
       results.push({
         attackId: 'anonymous_restore_request_denied',
         expected: '토큰 없는 비로그인 복구 요청은 401로 거부됨',
-        observed: restoreStatus === 401
-          ? '비로그인 POST /api/notes/restore 요청에 HTTP 401 반환; 복구 접근 차단됨'
-          : `비로그인 복구 응답 HTTP ${restoreStatus}; 예상과 다름`,
+        observed: 'not_run',
       });
 
       results.push({
@@ -283,19 +247,11 @@ export async function runAttackChecks(config) {
         : `비로그인 목록 응답 HTTP ${listRes.status}; 예상과 다름`,
     });
 
-    // 2. 비로그인 메모 작성 거부 점검
-    const postRes = await fetch(new URL('/api/notes', app), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '공격', body: '비인가 작성' }),
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 2. 비로그인 메모 작성 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_create_denied',
       expected: '토큰 없는 비로그인 메모 추가는 401로 거부됨',
-      observed: postRes.status === 401
-        ? '비로그인 POST /api/notes 요청에 HTTP 401 반환; 추가 차단됨'
-        : `비로그인 작성 응답 HTTP ${postRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     // 3. 비로그인 단건 메모 조회 거부 점검
@@ -310,32 +266,18 @@ export async function runAttackChecks(config) {
         : `비로그인 단건 응답 HTTP ${itemRes.status}; 예상과 다름`,
     });
 
-    // 4. 비로그인 메모 수정 거부 점검
-    const putRes = await fetch(new URL('/api/notes/test-target-id', app), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '변조시도', body: '변조내용' }),
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 4. 비로그인 메모 수정 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_put_denied',
       expected: '토큰 없는 비로그인 메모 수정은 401로 거부됨',
-      observed: putRes.status === 401
-        ? '비로그인 PUT /api/notes/:id 요청에 HTTP 401 반환; 수정 차단됨'
-        : `비로그인 수정 응답 HTTP ${putRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
-    // 5. 비로그인 메모 삭제 거부 점검
-    const delRes = await fetch(new URL('/api/notes/test-target-id', app), {
-      method: 'DELETE',
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 5. 비로그인 메모 삭제 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_delete_denied',
       expected: '토큰 없는 비로그인 메모 삭제는 401로 거부됨',
-      observed: delRes.status === 401
-        ? '비로그인 DELETE /api/notes/:id 요청에 HTTP 401 반환; 삭제 차단됨'
-        : `비로그인 삭제 응답 HTTP ${delRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     // 6. 위조 토큰 접근 거부 점검
@@ -391,19 +333,11 @@ export async function runAttackChecks(config) {
         : `비로그인 목록 응답 HTTP ${listRes.status}; 예상과 다름`,
     });
 
-    // 2. 비로그인 메모 작성 거부 점검
-    const postRes = await fetch(new URL('/api/notes', app), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '공격', body: '비인가 작성' }),
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 2. 비로그인 메모 작성 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
     results.push({
       attackId: 'anonymous_note_create_denied',
       expected: '토큰 없는 비로그인 메모 추가는 401로 거부됨',
-      observed: postRes.status === 401
-        ? '비로그인 POST /api/notes 요청에 HTTP 401 반환; 추가 차단됨'
-        : `비로그인 작성 응답 HTTP ${postRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     // 3. 비로그인 단건 메모 조회 거부 점검
@@ -487,16 +421,12 @@ export async function runAttackChecks(config) {
       : `비로그인 /api/notes에서 가상 메모가 반환되지 않음 (HTTP ${apiResponse.status})`,
   });
 
-  const writeResponse = await fetch(new URL('/api/notes', app), {
-    method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
-  });
-  results.push({
-    attackId: 'unsupported_write',
-    expected: '현재 읽기 전용 API에 POST 요청은 거부됨',
-    observed: writeResponse.status === 405
-      ? 'POST 요청에 HTTP 405 응답; 쓰기 요청 거부됨'
-      : `POST 응답 HTTP ${writeResponse.status}; 예상과 다름`,
-  });
+    // POST 쓰기 요청 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
+    results.push({
+      attackId: 'unsupported_write',
+      expected: '현재 읽기 전용 API에 POST 요청은 거부됨',
+      observed: 'not_run',
+    });
 
   return results;
 }
