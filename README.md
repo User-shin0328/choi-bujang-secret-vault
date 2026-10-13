@@ -361,6 +361,39 @@ npm run xdr:run -- brute-force
 | 15 | 계정 재인증 | 실제 제공 엔진의 재로그인 시각 검증 | 재시험 | 실서버 인증 연동 시험 | **미실행** (로컬 계약 외) |
 
 
+## 11단계: 나만의 접속 앱을 완성합니다
+
+11단계에서는 설치형 웹앱(PWA) 메타데이터(`public/manifest.json`), 앱 아이콘(`public/icon.svg`), 네트워크 상태 감지(오프라인 안내 배너)를 적용하고, 기기 승인을 서버에 확인 요청하여 서버 판정 결과에 따라서만 보호 자료실을 개방하는 화면(`public/index.html`)을 완성했습니다.
+
+### 현재 작동하는 기능
+1. **설치형 웹앱(PWA) 환경 및 오프라인 상태 감지**:
+   - 웹앱 매니페스트(`manifest.json`): 앱 이름(`BYTE BACK 자료실`), 짧은 이름(`자료실`), `standalone` 디스플레이 모드, 테마 색상 설정.
+   - 앱 아이콘(`icon.svg`): SVG 기반 고화질 방패/금고 형태의 앱 아이콘 제공.
+   - 오프라인 상태 감지: 브라우저 온/오프라인 이벤트를 감지하여 네트워크 미연결 시 자동 오프라인 안내 배너 표시 및 자료실 잠금 유지.
+2. **서버 검증 기반 기기 승인 화면 및 자료실 잠금 (`public/index.html`)**:
+   - 기기 승인 요청 인터페이스: 사용자가 `[서버에 기기 승인 확인 요청]` 버튼을 통해 서버 판정기/엔진에 기기 등록 및 승인 여부를 직접 요청.
+   - 승인 전 보호 자료 숨김: 서버의 기기 등록 승인(HTTP 200) 전에는 가상 메모 작성 폼과 메모 목록이 완전히 숨겨지고 `보호 자료실 잠김 (기기 승인 필요)` 안내 패널만 노출 (`S11_DATA_BEFORE_APPROVAL` 방어).
+   - 서버 판정 결과 연동: 단순 화면 승인 버튼 클릭이나 클라이언트 임의 처리로 권한을 부여하지 않고, 서버 응답이 200 OK인 경우에만 기존 자료실 개방 (`S11_BADGE_IS_TRUST`, `S11_APPROVED_SCREEN_CLOSED` 방어).
+   - 기기 키 보호: 기기 개인키나 비밀키를 브라우저 저장소(`localStorage`, `sessionStorage`) 또는 소스 코드에 저장하지 않음 (`S11_KEY_EXPOSED` 방어).
+
+### 다시 실행하고 확인하는 방법
+1. **로컬 빌드 및 단위 시험**:
+   ```bash
+   npm run build -- --local
+   npm run test:r5
+   npm run decider:test
+   npm run detect:test
+   ```
+2. **배포 주소 확인**:
+   - 웹앱 매니페스트: `https://choi-bujang-secret-vault-amber.vercel.app/manifest.json` (HTTP 200)
+   - 앱 아이콘: `https://choi-bujang-secret-vault-amber.vercel.app/icon.svg` (HTTP 200)
+   - 접속 화면: `https://choi-bujang-secret-vault-amber.vercel.app/`에서 승인 전 잠금 및 서버 기기 승인 요청 결과 확인.
+3. **제출 묶음 생성**:
+   ```bash
+   npm run bundle
+   ```
+
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.

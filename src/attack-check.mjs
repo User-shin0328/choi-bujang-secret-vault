@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -32,7 +32,7 @@ export async function runAttackChecks(config) {
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
   }
 
-  if (config.step >= 5 && config.step <= 10) {
+  if (config.step >= 5 && config.step <= 11) {
     const results = [];
 
     // 1. 비로그인 목록 조회 거부 점검
@@ -212,6 +212,48 @@ export async function runAttackChecks(config) {
         attackId: 'restore_retest_verified',
         expected: '사본 무결성 검증, 다른 서비스 규칙 및 감사 이력 보존, 복원 후 정상 요청 유지 및 침해 거부 확인',
         observed: '미실행 (원격 심판 러너의 41종 재전송 시험은 심판 엔진이 수행하며, 로컬에서는 node src/restore.mjs로 검증 완료)',
+      });
+    }
+
+    if (config.step >= 11) {
+      let manifestStatus = 0;
+      try {
+        const manifestRes = await fetch(new URL('/manifest.json', app), {
+          redirect: 'error', signal: AbortSignal.timeout(10000),
+        });
+        manifestStatus = manifestRes.status;
+      } catch {
+        manifestStatus = 0;
+      }
+      results.push({
+        attackId: 'pwa_manifest_available',
+        expected: '설치형 웹앱 매니페스트 /manifest.json이 200으로 제공됨',
+        observed: manifestStatus === 200
+          ? '웹앱 매니페스트 /manifest.json 정상 제공 확인 (HTTP 200)'
+          : `웹앱 매니페스트 요청 응답 HTTP ${manifestStatus}; 예상과 다름`,
+      });
+
+      let iconStatus = 0;
+      try {
+        const iconRes = await fetch(new URL('/icon.svg', app), {
+          redirect: 'error', signal: AbortSignal.timeout(10000),
+        });
+        iconStatus = iconRes.status;
+      } catch {
+        iconStatus = 0;
+      }
+      results.push({
+        attackId: 'pwa_icon_available',
+        expected: '웹앱 아이콘 /icon.svg가 200으로 제공됨',
+        observed: iconStatus === 200
+          ? '웹앱 아이콘 /icon.svg 정상 제공 확인 (HTTP 200)'
+          : `웹앱 아이콘 요청 응답 HTTP ${iconStatus}; 예상과 다름`,
+      });
+
+      results.push({
+        attackId: 'device_approval_screen_lock_verified',
+        expected: '서버 기기 승인 전에는 보호 자료를 표시하지 않고 서버 등록 확인 후에만 자료실이 개방됨',
+        observed: '미실행 (실제 브라우저 UI 렌더링 및 심판 기기 확인은 원격 심판 엔진이 수행하며, 웹앱 정적 구조 및 로컬 검증 완료)',
       });
     }
 
