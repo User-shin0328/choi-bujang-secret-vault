@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -32,7 +32,7 @@ export async function runAttackChecks(config) {
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
   }
 
-  if (config.step === 5 || config.step === 6 || config.step === 7 || config.step === 8) {
+  if (config.step === 5 || config.step === 6 || config.step === 7 || config.step === 8 || config.step === 9) {
     const results = [];
 
     // 1. 비로그인 목록 조회 거부 점검
@@ -176,6 +176,14 @@ export async function runAttackChecks(config) {
         attackId: 'zone_separation_verified',
         expected: '자기 메모만 읽기·수정 가능하고 타인 메모 및 공지 수정은 구역 규칙으로 차단됨',
         observed: '미실행 (구역 분리 심판 검사는 심판 엔진이 수행하며, 판정기 구역 규칙 및 API 직접 호출 검증은 로컬 시험으로 통과 확인)',
+      });
+    }
+
+    if (config.step >= 9) {
+      results.push({
+        attackId: 'anomaly_detection_revocation_proposed',
+        expected: '10분 내 120건 초과 폭주 조회는 detect에서 burst_read 회수 제안으로 탐지됨',
+        observed: '미실행 (운영 반 엔진의 실제 사건 전달 및 접속 회수는 연결하지 않으며, 탐지 규칙은 npm run detect:test 단위 시험으로 검증)',
       });
     }
 

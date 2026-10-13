@@ -283,6 +283,32 @@ npm run xdr:run -- brute-force
    node -e "import('./api/notes.js').then(() => console.log('API 구문 검사 통과')).catch(console.error)"
    ```
 
+## 9단계: 도플갱어를 찾고 권한을 거둡니다
+
+9단계에서는 제공된 가상 사건에서 메모 본문·토큰·실명 등 민감한 비밀값을 일체 배제하고 가명 사용자·기기·요청 종류·판정·시각만 안전하게 정제하며, 평소와 다른 네트워크와 10분 내 120건을 초과하는 다량 조회가 결합된 복합 의심 사건을 탐지하여 권한 회수 제안(`propose_revocation`)을 반환하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **화이트리스트 기반 가상 사건 정제 (`src/detect.mjs`의 `sanitizeEvent`, `parseEvents`)**:
+   - 가명 사용자(`identity.sub`, `subjectId`), 기기(`deviceId`), 요청 종류(`method`), 판정(`decision`), 발생 시각(`at`), 네트워크 신호(`network`, `region`)만 추출합니다.
+   - 메모 내용(`body`, `content`), 토큰(`token`, `authorization`), 실명/개인정보(`name`, `email`) 등은 객체에서 일체 보관하거나 메모리에 남기지 않고 원천 배제합니다.
+2. **복합 의심 탐지 및 권한 회수 제안 (`detect`)**:
+   - 10분(600,000ms) 슬라이딩 윈도우 내 동일 사용자의 조회가 120건을 초과하고 비정상 네트워크(`unusual`)가 결합된 복합 의심 사건 발생 시, 확인된 가상 기기 1개와 사유 코드를 포함한 `{ action: 'propose_revocation', reasonCode: 'burst_read', subject, device }`를 반환합니다.
+   - 지역(`region`) 하나만으로는 확정하지 않으며, 120건 이하의 일반 조회나 정상 사건은 관찰(`{ action: 'observe' }`) 상태를 유지합니다.
+   - 기존 판정기(`src/decider.mjs`) 응답 형식을 변경하지 않으며, 별도의 회수 API를 임의로 만들지 않습니다.
+
+### 확인 순서
+1. **가상 사건 탐지 시험 실행**:
+   ```bash
+   npm run detect:test
+   ```
+   - 정상 조회 30건: 통과 (`observe`)
+   - 10분 안에 120건: 통과 (`observe`)
+   - 10분 안에 121건: 통과 (`propose_revocation` · `burst_read`)
+   - 폭주 조회 200건: 통과 (`propose_revocation` · `burst_read`)
+   - 서로 다른 사용자 각 100건: 통과 (`observe`)
+   - 10분 밖으로 흩어진 조회 200건: 통과 (`observe`)
+   *(이 명령은 가상 사건을 통한 로컬 연습이며 실제 운영 반 엔진의 사건 전달이나 접속 회수 연결 증거가 아닙니다.)*
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
