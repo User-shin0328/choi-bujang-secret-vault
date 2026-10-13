@@ -254,8 +254,38 @@ npm run xdr:run -- brute-force
    - 다시 확인한 복합 이상 접속 통과 (`allow` · `approved`)
    *(이 명령은 가상 요청을 통한 로컬 연습이며 실제 심판 판정이 아닙니다.)*
 
+## 8단계: 자료마다 갈 수 있는 구역을 나눕니다
+
+8단계에서는 자료마다 접근할 수 있는 구역을 나누어, 내 자료실의 메모(`zone: 'note'`)와 강사 공지(`zone: 'notice'`)를 서로 다른 자원 ID로 분리하고, 판정기(`src/decider.mjs`)와 자료 API(`api/notes.js`) 양쪽에서 권한과 구역을 철저히 대조하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **자료 API 구역 및 자원 ID 분리 (`api/notes.js`)**:
+   - 메모 자원(`resourceId: 'note:ID'`, `zone: 'note'`)과 강사 공지 자원(`resourceId: 'notice:ID'`, `zone: 'notice'`)을 분리했습니다.
+   - 단건/목록 조회 시 검증된 사용자와 저장된 소유자를 대조하여 타인의 메모나 강사 전용 구역 접근을 `403 FORBIDDEN_OTHER_ZONE_OR_OWNER`로 차단합니다.
+   - 화면 메뉴나 클라이언트 요청 본문의 `role`·`owner_id` 조작을 배제하고, 검증된 토큰의 신원만 신뢰합니다. 일반 학생의 공지 수정/삭제 시도는 `403 FORBIDDEN_INSTRUCTOR_REQUIRED`로 차단됩니다.
+2. **판정기 구역 규칙 (`src/decider.mjs`의 `zone_rule`)**:
+   - `RULE_IDS`에 `zone_rule`을 추가했습니다.
+   - 사용자·기기·메서드(`GET`, `PUT`)·정확한 경로(`/notes/:id`)를 기반으로 자기 메모의 읽기·수정은 허용(`allow` · `approved`)합니다.
+   - 다른 사용자의 메모 접근, 일반 학생의 공지 수정(`PUT`), `:id` 깊이의 기능 경로(`/notes/export` 등) 및 알 수 없는 경로는 거부(`deny` · `zone_forbidden`)합니다.
+
+### 확인 순서
+1. **판정기 가상 요청 연습 실행**:
+   ```bash
+   npm run decider:test
+   ```
+   - 등록 기기의 정상 요청 통과 (`allow`)
+   - 미등록 기기의 가상 요청 거부 (`deny` · `device_not_registered`)
+   - 복합 이상 접속 추가 확인 (`step_up` · `step_up_required`)
+   *(이 명령은 가상 요청을 통한 로컬 연습이며 실제 심판 판정이 아닙니다.)*
+
+2. **구역 및 자원 API 로컬 검증**:
+   ```bash
+   node -e "import('./api/notes.js').then(() => console.log('API 구문 검사 통과')).catch(console.error)"
+   ```
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
 
 `src/decider.mjs`와 `src/detect.mjs`의 로컬 시험은 반 엔진이나 운영 심판의 결과가 아닙니다. 1단계 이후 제출 묶음 계약 `aleph.defense.submission.v2`는 `scripts/bundle.mjs`에 남아 있으며, 코딩 도구가 해당 단계의 최신 배포 주소와 Git 원격을 맞춘 뒤 사용합니다.
+

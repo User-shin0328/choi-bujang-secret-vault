@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6, 7].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -32,7 +32,7 @@ export async function runAttackChecks(config) {
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
   }
 
-  if (config.step === 5 || config.step === 6 || config.step === 7) {
+  if (config.step === 5 || config.step === 6 || config.step === 7 || config.step === 8) {
     const results = [];
 
     // 1. 비로그인 목록 조회 거부 점검
@@ -163,11 +163,19 @@ export async function runAttackChecks(config) {
       });
     }
 
-    if (config.step === 7) {
+    if (config.step >= 7) {
       results.push({
         attackId: 'step_up_reauth_blocked',
         expected: '복합 이상 접속은 step_up으로 전환되고 재로그인 전 자료 차단은 미실행으로 남김',
         observed: '미실행 (제공 엔진의 재로그인 시각 검증 계약이 없어 실제 서버 자료 차단은 미실행으로 남기며, 판정기 가상 사건 규칙은 npm run fixture:7로 검증)',
+      });
+    }
+
+    if (config.step >= 8) {
+      results.push({
+        attackId: 'zone_separation_verified',
+        expected: '자기 메모만 읽기·수정 가능하고 타인 메모 및 공지 수정은 구역 규칙으로 차단됨',
+        observed: '미실행 (구역 분리 심판 검사는 심판 엔진이 수행하며, 판정기 구역 규칙 및 API 직접 호출 검증은 로컬 시험으로 통과 확인)',
       });
     }
 
