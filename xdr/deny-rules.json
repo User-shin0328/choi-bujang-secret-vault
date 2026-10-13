@@ -142,5 +142,69 @@
     "ip": "203.0.113.22",
     "user": "",
     "reason": "요청 인자 내 SQL 구문 연속 주입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-01",
+    "expiresAt": "2026-10-14T23:48:40.609Z",
+    "ip": "203.0.113.10",
+    "user": "",
+    "reason": "요청 머리글 내 원격 조회 구문 삽입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-02",
+    "expiresAt": "2026-10-14T23:48:40.612Z",
+    "ip": "203.0.113.10",
+    "user": "",
+    "reason": "요청 인자 내 원격 조회 구문 삽입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-03",
+    "expiresAt": "2026-10-14T23:48:40.613Z",
+    "ip": "198.51.100.16",
+    "user": "",
+    "reason": "취약점 점검 흔적 및 원격 조회 구문 반복 유입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-04",
+    "expiresAt": "2026-10-14T23:48:40.615Z",
+    "ip": "192.0.2.16",
+    "user": "",
+    "reason": "취약점 점검 흔적 및 원격 조회 구문 반복 유입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-05",
+    "expiresAt": "2026-10-14T23:48:40.616Z",
+    "ip": "203.0.113.24",
+    "user": "",
+    "reason": "취약점 점검 흔적 및 원격 조회 구문 반복 유입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-06",
+    "expiresAt": "2026-10-14T23:48:40.617Z",
+    "ip": "198.51.100.24",
+    "user": "",
+    "reason": "취약점 점검 흔적 및 원격 조회 구문 반복 유입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-07",
+    "expiresAt": "2026-10-14T23:48:40.618Z",
+    "ip": "192.0.2.24",
+    "user": "",
+    "reason": "요청 머리글 내 원격 조회 구문 삽입"
+  },
+  {
+    "ruleId": "xdr.known_cve.deny",
+    "alertId": "kc-08",
+    "expiresAt": "2026-10-14T23:48:40.619Z",
+    "ip": "203.0.113.31",
+    "user": "",
+    "reason": "요청 머리글 내 원격 조회 구문 삽입"
   }
 ]
