@@ -222,6 +222,38 @@ npm run xdr:run -- brute-force
    - `통과 · 미등록 기기의 가상 요청`: 미등록 기기(`deviceRegistered: false`) 가상 요청이 `decision: 'deny'` 및 `reasonCode: 'device_not_registered'`로 정상 거부되는지 확인
    *(이 명령은 가상 요청을 통한 로컬 연습이며 실제 심판 판정이 아닙니다.)*
 
+## 7단계: 평소와 다른 접속은 다시 확인합니다
+
+7단계에서는 판정 요청 계약(`docs/DECIDER_REQUEST.md`)에 따라 판정기(`src/decider.mjs`)에 가상 접속 신호(`signals`) 및 사건(`recentEvents`) 입력 검증과 `step_up_required` 규칙을 적용했습니다.
+
+### 현재 작동하는 기능
+1. **가상 접속 신호 및 사건 입력 검증 (`src/decider.mjs`)**:
+   - 엔진이 검증해 전달한 가상 접속 신호(`judge_fixture`)만 신뢰 출처로 구분하고 위조된 클라이언트 헤더(`geo`, `identity` 등)는 배제합니다.
+   - 접속 정보가 누락되거나 출처가 불명확해도 임의의 정상값으로 채우지 않고 있는 그대로 `null`로 보존합니다.
+2. **복합 이상 접속 탐지 및 추가 확인 요구 (`step_up_required`)**:
+   - `RULE_IDS`에 `step_up_required` 규칙을 추가했습니다.
+   - 평소와 다른 시각(`hour < 6 || hour >= 23`), 낯선 네트워크(`network !== 'usual'`), 갑작스러운 다량 읽기(`count >= 10`)가 함께 나타난 복합 이상 사건만 추가 확인(`decision: 'step_up'`, `reasonCode: 'step_up_required'`)으로 보냅니다.
+   - 지역(`region`) 하나만으로는 영구 차단하지 않으며, 재인증 확인(`stepUp.verified === true`)이 완료된 요청은 정상 허용(`decision: 'allow'`)합니다.
+   - 실제 제공 엔진의 재로그인 시각 검증 계약이 없는 환경에서는 실서버 차단을 지어내지 않고 미실행으로 유지합니다.
+
+### 확인 순서
+1. **가상 사건 판정 시험**:
+   ```bash
+   npm run fixture:7
+   ```
+   - 정상 사건: `allow`
+   - 복합 이상 사건: `step_up`
+
+2. **판정기 종합 가상 요청 연습**:
+   ```bash
+   npm run decider:test
+   ```
+   - 등록 기기의 정상 요청 통과 (`allow`)
+   - 미등록 기기의 가상 요청 거부 (`deny` · `device_not_registered`)
+   - 복합 이상 접속 추가 확인 (`step_up` · `step_up_required`)
+   - 다시 확인한 복합 이상 접속 통과 (`allow` · `approved`)
+   *(이 명령은 가상 요청을 통한 로컬 연습이며 실제 심판 판정이 아닙니다.)*
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
