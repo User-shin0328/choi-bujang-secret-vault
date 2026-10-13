@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "policyRevision": 1,
+  "verified": true,
+  "verifiedAt": "2026-10-13T00:00:00.000Z",
+  "ruleIds": [
+    "device_registered",
+    "step_up_required",
+    "zone_rule"
+  ],
+  "allowedRoutes": [
+    "GET /api/notes",
+    "POST /api/notes",
+    "GET /api/notes/:id",
+    "PUT /api/notes/:id",
+    "DELETE /api/notes/:id",
+    "POST /api/auth"
+  ],
+  "checksum": "e1cde5ca822a4eef0ba9b7f21277a84871f1751c6ca028e7de49d4bb75dd6610"
+}
