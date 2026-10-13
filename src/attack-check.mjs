@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -32,7 +32,7 @@ export async function runAttackChecks(config) {
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
   }
 
-  if (config.step === 5) {
+  if (config.step === 5 || config.step === 6) {
     const results = [];
 
     // 1. 비로그인 목록 조회 거부 점검
@@ -154,6 +154,14 @@ export async function runAttackChecks(config) {
         ? `원본 API 직접 요청 시 HTTP ${origStatus} 반환; 비인가 직접 접근 차단됨`
         : `원본 API 직접 요청 응답 HTTP ${origStatus}; 예상과 다름`,
     });
+
+    if (config.step === 6) {
+      results.push({
+        attackId: 'unregistered_device_blocked',
+        expected: '미등록 기기의 내 자료실 접근은 decider에서 device_not_registered로 거부됨',
+        observed: '미실행 (미등록 기기 요청 검사는 심판 엔진이 수행하며, 로컬에서는 npm run decider:test 단위 시험으로 검증)',
+      });
+    }
 
     return results;
   }
