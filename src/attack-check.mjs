@@ -1,7 +1,7 @@
 // The student changes this check as each stage adds an attack to the same app.
 // Never return tokens, private keys, real names, or note bodies.
 export async function runAttackChecks(config) {
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(config.step)) throw new Error('이 단계의 공격 점검을 src/attack-check.mjs에 구현해 주세요.');
   let app;
   try {
     app = new URL(config.publicAppUrl);
@@ -32,7 +32,7 @@ export async function runAttackChecks(config) {
       observed: visible ? '비로그인 요청에서 공개 가상 메모 확인 표시가 보임' : `비로그인 요청에서 확인 표시가 보이지 않음 (HTTP ${response.status})` }];
   }
 
-  if (config.step === 5 || config.step === 6 || config.step === 7 || config.step === 8 || config.step === 9) {
+  if (config.step >= 5 && config.step <= 10) {
     const results = [];
 
     // 1. 비로그인 목록 조회 거부 점검
@@ -184,6 +184,34 @@ export async function runAttackChecks(config) {
         attackId: 'anomaly_detection_revocation_proposed',
         expected: '10분 내 120건 초과 폭주 조회는 detect에서 burst_read 회수 제안으로 탐지됨',
         observed: '미실행 (운영 반 엔진의 실제 사건 전달 및 접속 회수는 연결하지 않으며, 탐지 규칙은 npm run detect:test 단위 시험으로 검증)',
+      });
+    }
+
+    if (config.step >= 10) {
+      let restoreStatus = 0;
+      try {
+        const restoreRes = await fetch(new URL('/api/notes/restore', app), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: '4' }),
+          redirect: 'error', signal: AbortSignal.timeout(10000),
+        });
+        restoreStatus = restoreRes.status;
+      } catch {
+        restoreStatus = 0;
+      }
+      results.push({
+        attackId: 'anonymous_restore_request_denied',
+        expected: '토큰 없는 비로그인 복구 요청은 401로 거부됨',
+        observed: restoreStatus === 401
+          ? '비로그인 POST /api/notes/restore 요청에 HTTP 401 반환; 복구 접근 차단됨'
+          : `비로그인 복구 응답 HTTP ${restoreStatus}; 예상과 다름`,
+      });
+
+      results.push({
+        attackId: 'restore_retest_verified',
+        expected: '사본 무결성 검증, 다른 서비스 규칙 및 감사 이력 보존, 복원 후 정상 요청 유지 및 침해 거부 확인',
+        observed: '미실행 (원격 심판 러너의 41종 재전송 시험은 심판 엔진이 수행하며, 로컬에서는 node src/restore.mjs로 검증 완료)',
       });
     }
 
