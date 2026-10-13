@@ -35,45 +35,35 @@ export async function runAttackChecks(config) {
   if (config.step >= 5 && config.step <= 12) {
     const results = [];
 
-    // 1. 비로그인 목록 조회 거부 점검
-    const listRes = await fetch(new URL('/api/notes', app), {
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 1. 비로그인 목록 조회 거부 점검 (격리 환경 실행 기록 미보유 점검은 not_run 표기)
     results.push({
       attackId: 'anonymous_notes_list_denied',
       expected: '토큰 없는 비로그인 목록 조회는 401로 거부됨',
-      observed: listRes.status === 401
-        ? '비로그인 GET /api/notes 요청에 HTTP 401 반환; 목록 접근 차단됨'
-        : `비로그인 목록 응답 HTTP ${listRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
-    // 2. 비로그인 메모 작성 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
+    // 2. 비로그인 메모 작성 거부 점검
     results.push({
       attackId: 'anonymous_note_create_denied',
       expected: '토큰 없는 비로그인 메모 추가는 401로 거부됨',
       observed: 'not_run',
     });
 
-    // 3. 비로그인 단건 메모 조회 거부 점검 (GET 요청)
-    const itemRes = await fetch(new URL('/api/notes/non-existent-id', app), {
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
+    // 3. 비로그인 단건 메모 조회 거부 점검
     results.push({
       attackId: 'anonymous_note_item_denied',
       expected: '토큰 없는 비로그인 단건 메모 조회는 401로 거부됨',
-      observed: itemRes.status === 401
-        ? '비로그인 GET /api/notes/:id 요청에 HTTP 401 반환; 단건 조회 차단됨'
-        : `비로그인 단건 응답 HTTP ${itemRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
-    // 4. 비로그인 메모 수정 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
+    // 4. 비로그인 메모 수정 거부 점검
     results.push({
       attackId: 'anonymous_note_put_denied',
       expected: '토큰 없는 비로그인 메모 수정은 401로 거부됨',
       observed: 'not_run',
     });
 
-    // 5. 비로그인 메모 삭제 거부 점검 (쓰기 요청은 격리 환경 제한으로 not_run 설정)
+    // 5. 비로그인 메모 삭제 거부 점검
     results.push({
       attackId: 'anonymous_note_delete_denied',
       expected: '토큰 없는 비로그인 메모 삭제는 401로 거부됨',
@@ -81,63 +71,31 @@ export async function runAttackChecks(config) {
     });
 
     // 6. 위조 토큰 접근 거부 점검
-    const fakeTokenRes = await fetch(new URL('/api/notes', app), {
-      headers: { 'Authorization': 'Bearer invalid-token' },
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
     results.push({
       attackId: 'invalid_token_access_denied',
       expected: '서명되지 않은 위조 토큰 요청은 401로 거부됨',
-      observed: fakeTokenRes.status === 401
-        ? '위조 토큰 요청에 HTTP 401 반환; 비인가 토큰 차단됨'
-        : `위조 토큰 응답 HTTP ${fakeTokenRes.status}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     // 7. 정적 /data.json 메모 0건 확인
-    const dataResponse = await fetch(new URL('/data.json', app), {
-      redirect: 'error', signal: AbortSignal.timeout(10000),
-    });
-    let notes = null;
-    if (dataResponse.ok) {
-      try {
-        const data = await dataResponse.json();
-        notes = data?.notes;
-      } catch {
-        notes = null;
-      }
-    }
-    const staticNotesEmpty = Array.isArray(notes) && notes.length === 0;
     results.push({
       attackId: 'anonymous_static_note_read',
       expected: '비로그인 정적 파일에서 가상 메모가 보이지 않음',
-      observed: staticNotesEmpty
-        ? '비로그인 /data.json에서 메모 0건 확인'
-        : `비로그인 /data.json에서 메모가 제거되지 않음 (HTTP ${dataResponse.status})`,
+      observed: 'not_run',
     });
 
     // 8. 원본 API 직접 접근 차단 점검
-    let origStatus = 0;
-    try {
-      const origRes = await fetch(config.originalApiUrl, {
-        redirect: 'error', signal: AbortSignal.timeout(10000),
-      });
-      origStatus = origRes.status;
-    } catch {
-      origStatus = 0;
-    }
     results.push({
       attackId: 'original_api_direct_access_denied',
       expected: '원본 DB API 직접 요청은 거부됨',
-      observed: (origStatus === 401 || origStatus === 403 || origStatus === 404)
-        ? `원본 API 직접 요청 시 HTTP ${origStatus} 반환; 비인가 직접 접근 차단됨`
-        : `원본 API 직접 요청 응답 HTTP ${origStatus}; 예상과 다름`,
+      observed: 'not_run',
     });
 
     if (config.step >= 6) {
       results.push({
         attackId: 'unregistered_device_blocked',
         expected: '미등록 기기의 내 자료실 접근은 decider에서 device_not_registered로 거부됨',
-        observed: '미실행 (미등록 기기 요청 검사는 심판 엔진이 수행하며, 로컬에서는 npm run decider:test 단위 시험으로 검증)',
+        observed: 'not_run',
       });
     }
 
@@ -145,7 +103,7 @@ export async function runAttackChecks(config) {
       results.push({
         attackId: 'step_up_reauth_blocked',
         expected: '복합 이상 접속은 step_up으로 전환되고 재로그인 전 자료 차단은 미실행으로 남김',
-        observed: '미실행 (제공 엔진의 재로그인 시각 검증 계약이 없어 실제 서버 자료 차단은 미실행으로 남기며, 판정기 가상 사건 규칙은 npm run fixture:7로 검증)',
+        observed: 'not_run',
       });
     }
 
@@ -153,7 +111,7 @@ export async function runAttackChecks(config) {
       results.push({
         attackId: 'zone_separation_verified',
         expected: '자기 메모만 읽기·수정 가능하고 타인 메모 및 공지 수정은 구역 규칙으로 차단됨',
-        observed: '미실행 (구역 분리 심판 검사는 심판 엔진이 수행하며, 판정기 구역 규칙 및 API 직접 호출 검증은 로컬 시험으로 통과 확인)',
+        observed: 'not_run',
       });
     }
 
@@ -161,7 +119,7 @@ export async function runAttackChecks(config) {
       results.push({
         attackId: 'anomaly_detection_revocation_proposed',
         expected: '10분 내 120건 초과 폭주 조회는 detect에서 burst_read 회수 제안으로 탐지됨',
-        observed: '미실행 (운영 반 엔진의 실제 사건 전달 및 접속 회수는 연결하지 않으며, 탐지 규칙은 npm run detect:test 단위 시험으로 검증)',
+        observed: 'not_run',
       });
     }
 
@@ -175,49 +133,27 @@ export async function runAttackChecks(config) {
       results.push({
         attackId: 'restore_retest_verified',
         expected: '사본 무결성 검증, 다른 서비스 규칙 및 감사 이력 보존, 복원 후 정상 요청 유지 및 침해 거부 확인',
-        observed: '미실행 (원격 심판 러너의 41종 재전송 시험은 심판 엔진이 수행하며, 로컬에서는 node src/restore.mjs로 검증 완료)',
+        observed: 'not_run',
       });
     }
 
     if (config.step >= 11) {
-      let manifestStatus = 0;
-      try {
-        const manifestRes = await fetch(new URL('/manifest.json', app), {
-          redirect: 'error', signal: AbortSignal.timeout(10000),
-        });
-        manifestStatus = manifestRes.status;
-      } catch {
-        manifestStatus = 0;
-      }
       results.push({
         attackId: 'pwa_manifest_available',
         expected: '설치형 웹앱 매니페스트 /manifest.json이 200으로 제공됨',
-        observed: manifestStatus === 200
-          ? '웹앱 매니페스트 /manifest.json 정상 제공 확인 (HTTP 200)'
-          : `웹앱 매니페스트 요청 응답 HTTP ${manifestStatus}; 예상과 다름`,
+        observed: 'not_run',
       });
 
-      let iconStatus = 0;
-      try {
-        const iconRes = await fetch(new URL('/icon.svg', app), {
-          redirect: 'error', signal: AbortSignal.timeout(10000),
-        });
-        iconStatus = iconRes.status;
-      } catch {
-        iconStatus = 0;
-      }
       results.push({
         attackId: 'pwa_icon_available',
         expected: '웹앱 아이콘 /icon.svg가 200으로 제공됨',
-        observed: iconStatus === 200
-          ? '웹앱 아이콘 /icon.svg 정상 제공 확인 (HTTP 200)'
-          : `웹앱 아이콘 요청 응답 HTTP ${iconStatus}; 예상과 다름`,
+        observed: 'not_run',
       });
 
       results.push({
         attackId: 'device_approval_screen_lock_verified',
         expected: '서버 기기 승인 전에는 보호 자료를 표시하지 않고 서버 등록 확인 후에만 자료실이 개방됨',
-        observed: '미실행 (실제 브라우저 UI 렌더링 및 심판 기기 확인은 원격 심판 엔진이 수행하며, 웹앱 정적 구조 및 로컬 검증 완료)',
+        observed: 'not_run',
       });
     }
 
@@ -225,7 +161,7 @@ export async function runAttackChecks(config) {
       results.push({
         attackId: 'war_room_summary_and_audit_verified',
         expected: '탈환 작전실 4대 요약(판정기 3개, 탐지 사건, 회수 1건, 복구 rev1) 및 1~11단계 종합 실측 표 렌더링 확인',
-        observed: '탈환 작전실 대시보드 4대 요약 카드 및 1~11단계 종합 실측 검증 표 제공 확인 (가상 메모 본문 제외, 41종 공격 재시험은 미실행 보존)',
+        observed: 'not_run',
       });
     }
 
