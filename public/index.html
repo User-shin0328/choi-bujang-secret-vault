@@ -250,19 +250,24 @@
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
 
+    let currentUserEmail = null;
+
+    // 브라우저 저장소(localStorage, sessionStorage)에 기기 키나 토큰을 절대 저장하지 않으며 항상 정리
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (_) {}
+
     function updateAuthUI(token, userEmail) {
       currentToken = token;
+      currentUserEmail = userEmail;
       if (token) {
-        sessionStorage.setItem('aleph_token', token);
-        if (userEmail) sessionStorage.setItem('aleph_email', userEmail);
         loggedOutView.style.display = 'none';
         loggedInView.style.display = 'block';
-        userDisplay.textContent = `로그인 계정: ${userEmail || sessionStorage.getItem('aleph_email') || '인증된 사용자'}`;
+        userDisplay.textContent = `로그인 계정: ${userEmail || '인증된 사용자'}`;
         // 로그인 완료 후 서버 기기 승인 확인 및 자료 로드
         verifyDeviceAndLoadNotes(false);
       } else {
-        sessionStorage.removeItem('aleph_token');
-        sessionStorage.removeItem('aleph_email');
         loggedOutView.style.display = 'block';
         loggedInView.style.display = 'none';
         deviceApprovalResult.textContent = '';
@@ -275,14 +280,9 @@
       }
     }
 
-    // 세션 복원
-    const savedToken = sessionStorage.getItem('aleph_token');
-    if (savedToken) {
-      updateAuthUI(savedToken, sessionStorage.getItem('aleph_email'));
-    } else {
-      closeVault();
-      updateNetworkStatus();
-    }
+    // 브라우저 저장소에 키를 남겨두지 않고 항상 비인가/승인 전 상태로 안전하게 초기화
+    closeVault();
+    updateNetworkStatus();
 
     // 로그인
     document.getElementById('btn-login').addEventListener('click', async () => {

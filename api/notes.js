@@ -127,7 +127,7 @@ export default async function handler(request, response) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || config.identityProvider?.issuer?.replace(/\/auth\/v1$/u, '');
-  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || 'sb_publishable_YRJgWCiyxTxGvM81uZZu-w_66OxefD8';
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ANON_KEY || '';
 
   let authUser = null;
   try {
