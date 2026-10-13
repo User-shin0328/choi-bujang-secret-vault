@@ -204,10 +204,11 @@ npm run xdr:run -- brute-force
 6단계에서는 판정 요청 계약(`docs/DECIDER_REQUEST.md`)에 따라 판정기(`src/decider.mjs`)에 기기 등록 여부(`deviceRegistered`)를 검증하는 `device_registered` 규칙을 적용했습니다.
 
 ### 현재 작동하는 기능
-1. **기기 등록 여부 검증 및 접근 제어 (`src/decider.mjs`)**:
-   - `RULE_IDS`에 `device_registered` 규칙을 추가했습니다.
-   - 판정 요청의 `request.deviceRegistered`가 `true`인 등록 기기 요청에 대해서만 자료실 읽기를 허용(`decision: 'allow'`, `reasonCode: 'approved'`)합니다.
-   - `request.deviceRegistered`가 `false`이거나 누락된 미등록 기기 요청은 즉각 거부(`decision: 'deny'`, `reasonCode: 'device_not_registered'`)합니다.
+1. **신원·기기·동작·경로 검증 및 기기 바인딩 접근 제어 (`src/decider.mjs`)**:
+   - `RULE_IDS`에 `device_registered` 규칙을 적용했습니다.
+   - 엔진이 확인해 전달한 로그인(`subjectId`), 기기 식별자(`deviceId`), 등록 상태(`deviceRegistered`), 동작(`method: 'GET'`), 경로(`service: 'notes'`, notes 읽기 경로)만 검증합니다.
+   - 등록되어 해당 사용자와 묶인 기기만 자료실 읽기를 허용(`decision: 'allow'`, `reasonCode: 'approved'`)합니다.
+   - 미등록 기기(`deviceRegistered !== true`), 식별자 누락(확인 실패), 다른 사용자의 기기(바인딩 불일치), 읽기 외 동작/경로는 즉각 거부(`decision: 'deny'`, `reasonCode: 'device_not_registered'`)합니다.
    - 기존 XDR 차단 규칙(`xdr.brute_force.deny`, `xdr.web_injection.deny`) 검사도 그대로 유지됩니다.
 
 ### 확인 순서
