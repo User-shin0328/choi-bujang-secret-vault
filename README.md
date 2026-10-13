@@ -199,30 +199,6 @@ npm run xdr:run -- brute-force
 - 알림 로그: `xdr/alerts.log`
 - 거부 규칙: `xdr/deny-rules.json`
 
-## 6단계: 등록한 기기만 자료실에 들어옵니다
-
-6단계에서는 판정 요청 계약(`docs/DECIDER_REQUEST.md`)에 따라 판정기(`src/decider.mjs`)에 기기 등록 여부(`deviceRegistered`)를 검증하는 `device_registered` 규칙을 적용했습니다.
-
-### 현재 작동하는 기능
-1. **신원·기기·동작·경로 검증 및 기기 바인딩 접근 제어 (`src/decider.mjs`)**:
-   - `RULE_IDS`에 `device_registered` 규칙을 적용했습니다.
-   - 엔진이 확인해 전달한 로그인(`subjectId`), 기기 식별자(`deviceId`), 등록 상태(`deviceRegistered`), 동작(`method: 'GET'`), 경로(`service: 'notes'`, notes 읽기 경로)만 엄격히 검증합니다.
-   - 사용자와 기기를 1:1로 묶어, 등록되어 해당 사용자와 묶인 기기만 자료실 읽기를 허용(`decision: 'allow'`, `reasonCode: 'approved'`)합니다.
-   - 미등록 기기(`deviceRegistered !== true`), 식별자 누락(확인 실패), 다른 사용자의 기기(바인딩 불일치), 읽기 외 동작/경로는 즉각 거부(`decision: 'deny'`, `reasonCode: 'device_not_registered'`)합니다.
-   - 기존 XDR 차단 규칙(`xdr.brute_force.deny`, `xdr.web_injection.deny`) 검사도 그대로 유지됩니다.
-
-### 확인 순서
-이번 과정에는 별도의 클라이언트 접속 프로그램 설치가 없으며, 미등록 기기 접근 시험은 심판 엔진이 가상 요청으로 전송하여 판정합니다.
-
-1. **로컬 판정기 가상 요청 연습 실행**:
-   ```bash
-   npm run decider:test
-   ```
-2. **콘솔 결과 확인**:
-   - `통과 · 등록 기기의 정상 요청`: 등록 기기(`deviceRegistered: true`) 요청이 `decision: 'allow'`로 정상 허용되는지 확인
-   - `통과 · 미등록 기기의 가상 요청`: 미등록 기기(`deviceRegistered: false`) 가상 요청이 `decision: 'deny'` 및 `reasonCode: 'device_not_registered'`로 정상 거부되는지 확인
-   *(이 명령은 가상 요청을 통한 로컬 연습이며 실제 심판 판정이 아닙니다.)*
-
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
