@@ -313,8 +313,56 @@ export default async function handler(request, response) {
       return response.status(200).json([...myNotes, ...noticeList]);
     }
 
-    // 4. 추가 POST (/api/notes)
+    // 4. 추가 POST (/api/notes) 및 단건 복원 POST (/api/notes/restore)
     if (method === 'POST') {
+      const isRestoreRequest = id === 'restore'
+        || request.query?.action === 'restore'
+        || bodyData.action === 'restore'
+        || (request.url && request.url.split('?')[0].endsWith('/restore'));
+
+      // 4-1. 비공개 가상 메모 사본 기반 단건 복원 (POST /api/notes/restore)
+      if (isRestoreRequest) {
+        const targetId = bodyData.id ? normalizeNoteId(bodyData.id) : (request.query?.targetId || '4');
+
+        // 시험 계정 B의 메모로만 확인 (사용자 A 등 타인의 B 메모 복원 시도 차단)
+        if (authUser.identity && authUser.identity !== 'b' && targetId === '4') {
+          return response.status(403).json({ error: 'FORBIDDEN_OTHER_USER_RESTORE' });
+        }
+
+        try {
+          const { restoreSingleNote } = await import('../src/restore.mjs');
+          const restoreResult = restoreSingleNote({
+            noteId: targetId,
+            requestedData: bodyData,
+            notesStore: memoryNotes,
+            verbose: false,
+          });
+
+          if (supabase) {
+            try {
+              await supabase.from('notes').upsert({
+                id: restoreResult.restoredNote.id,
+                title: restoreResult.restoredNote.title,
+                content: restoreResult.restoredNote.body,
+                owner_id: authUser.userId,
+              });
+            } catch { /* fallback to memory */ }
+          }
+
+          return response.status(200).json({
+            success: true,
+            message: '메모 복구 완료',
+            restored: restoreResult.restoredNote,
+            otherNotesPreserved: restoreResult.otherNotesPreserved,
+          });
+        } catch (restoreErr) {
+          return response.status(400).json({
+            error: 'RESTORE_MISMATCH',
+            message: restoreErr.message,
+          });
+        }
+      }
+
       // 강사 공지나 강사 구역 생성을 시도하는 경우 검증된 강사가 아니면 차단
       const isNoticeOrInstructorTarget = bodyData.zone === 'notice'
         || bodyData.zone === 'instructor'

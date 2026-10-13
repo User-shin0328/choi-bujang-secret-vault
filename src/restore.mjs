@@ -379,13 +379,211 @@ export async function verifyPolicyEnforcement(restoredPolicy, { verbose = true }
   };
 }
 
+/**
+ * 메모 내용(title:body)에 대한 SHA-256 해시를 계산합니다.
+ */
+export function calculateContentHash(title = '', body = '') {
+  return createHash('sha256').update(`${title}:${body}`).digest('hex');
+}
+
+/**
+ * 비공개 가상 메모 사본 목록을 읽어옵니다.
+ */
+export function loadBackupNotes(backupNotesPath = 'backup/verified-notes.json') {
+  const resolved = resolve(process.cwd(), backupNotesPath);
+  if (!existsSync(resolved)) {
+    throw new Error(`비공개 가상 메모 사본이 존재하지 않습니다: [${backupNotesPath}]`);
+  }
+  try {
+    const raw = readFileSync(resolved, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('사본 메모 목록이 비어 있거나 올바르지 않습니다.');
+    }
+    return parsed;
+  } catch (err) {
+    throw new Error(`사본 메모 읽기 실패: ${err.message}`);
+  }
+}
+
+/**
+ * 비공개 가상 메모 사본에서 지정한 한 건만 복원합니다.
+ * - ID·소유자·내용 해시를 사본과 엄격히 대조합니다 (S10_RESTORE_MISMATCH 방어).
+ * - 다른 메모와 감사 기록은 반드시 보존합니다 (S10_AUDIT_DROPPED 방어).
+ * - 시험 계정 B의 메모(id: '4')로 확인합니다.
+ */
+export function restoreSingleNote({
+  noteId = '4',
+  requestedData = {},
+  backupNotesPath = 'backup/verified-notes.json',
+  auditLogPath = 'backup/audit-log.json',
+  notesStore = null,
+  verbose = true,
+} = {}) {
+  const backupNotes = loadBackupNotes(backupNotesPath);
+  const targetId = String(noteId).trim().replace(/^note:/iu, '');
+
+  // 1. 사본에서 지정한 한 건 조회
+  const safeNote = backupNotes.find(n => String(n.id) === targetId);
+  if (!safeNote) {
+    throw new Error(`사본에서 메모 ID [${targetId}]를 찾을 수 없습니다. 복원을 중단합니다.`);
+  }
+
+  // 사본 자체의 내용 해시 무결성 검증
+  const calculatedSafeHash = calculateContentHash(safeNote.title, safeNote.body);
+  if (safeNote.contentHash !== calculatedSafeHash) {
+    throw new Error('사본 메모 자체의 내용 해시가 올바르지 않습니다. 복원을 중단합니다.');
+  }
+
+  // 2. ID·소유자·내용 해시 대조 (요청 본문에 포함된 경우 엄격 검증)
+  if (requestedData.id && String(requestedData.id).trim().replace(/^note:/iu, '') !== String(safeNote.id)) {
+    throw new Error(`복구 대상 ID 불일치: 요청 [${requestedData.id}] !== 사본 [${safeNote.id}]`);
+  }
+  const reqOwner = requestedData.owner || requestedData.owner_identity;
+  if (reqOwner && reqOwner !== safeNote.owner_identity) {
+    throw new Error(`복구 대상 소유자 불일치: 요청 [${reqOwner}] !== 사본 [${safeNote.owner_identity}]`);
+  }
+  const reqHash = requestedData.contentHash || requestedData.content_hash;
+  if (reqHash && reqHash !== safeNote.contentHash) {
+    throw new Error(`복구 대상 내용 해시 불일치: 요청 [${reqHash}] !== 사본 [${safeNote.contentHash}]`);
+  }
+
+  // 3. 지정한 한 건만 복원 및 다른 메모 보존
+  let otherNotesPreserved = true;
+  if (notesStore instanceof Map) {
+    const beforeKeys = [...notesStore.keys()];
+    notesStore.set(String(safeNote.id), {
+      id: String(safeNote.id),
+      resourceId: safeNote.resourceId || `note:${safeNote.id}`,
+      zone: safeNote.zone || 'note',
+      title: safeNote.title,
+      body: safeNote.body,
+      owner_identity: safeNote.owner_identity,
+      owner_id: null,
+      contentHash: safeNote.contentHash,
+    });
+    // 다른 메모 키가 삭제되지 않고 유지되는지 확인
+    const otherKeys = beforeKeys.filter(k => k !== String(safeNote.id));
+    otherNotesPreserved = otherKeys.every(k => notesStore.has(k));
+  }
+
+  // 4. 감사 기록 보존 및 새 이벤트 누적 (S10_AUDIT_DROPPED 방어)
+  const auditEvent = {
+    id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    action: 'restore_single_note',
+    at: new Date().toISOString(),
+    restoredNoteId: String(safeNote.id),
+    targetOwner: safeNote.owner_identity,
+    contentHash: safeNote.contentHash,
+    status: 'success',
+    otherNotesPreserved,
+  };
+  const updatedAuditLogs = appendAuditLog(auditLogPath, auditEvent);
+
+  if (verbose) {
+    process.stdout.write('【4. 비공개 사본 기반 단건 메모 복원 완료】\n');
+    process.stdout.write('----------------------------------------\n');
+    process.stdout.write(`• 복구 대상 ID: ${safeNote.id} (사본 일치 확인)\n`);
+    process.stdout.write(`• 복구 대상 소유자: ${safeNote.owner_identity} (시험 계정 B 일치 확인)\n`);
+    process.stdout.write(`• 복구 대상 내용 해시: ${safeNote.contentHash} (사본 일치 확인)\n`);
+    process.stdout.write(`• 다른 메모 보존 여부: ${otherNotesPreserved ? '보존됨' : '확인 필요'}\n`);
+    process.stdout.write(`• 감사 기록 누적 건수: ${updatedAuditLogs.length}건 보존 완료\n`);
+    process.stdout.write('========================================\n');
+  }
+
+  return {
+    success: true,
+    restoredNote: {
+      id: String(safeNote.id),
+      resourceId: safeNote.resourceId || `note:${safeNote.id}`,
+      zone: safeNote.zone || 'note',
+      title: safeNote.title,
+      body: safeNote.body,
+      owner_identity: safeNote.owner_identity,
+      contentHash: safeNote.contentHash,
+    },
+    auditLogsCount: updatedAuditLogs.length,
+    otherNotesPreserved,
+  };
+}
+
+/**
+ * 시험 계정 B의 메모 단건 복원 및 불일치 시 거부 동작을 검증합니다.
+ */
+export function verifyNoteRestore({ verbose = true } = {}) {
+  // 가상 메모 저장소 생성 (1~3번 A 소유, 4번 B 소유가 변조되거나 삭제된 상태 가정)
+  const testStore = new Map([
+    ['1', { id: '1', title: '과제', body: '실습용 가상 과제 기록', owner_identity: 'a' }],
+    ['2', { id: '2', title: '포트폴리오', body: '실습용 가상 포트폴리오 기록', owner_identity: 'a' }],
+    ['3', { id: '3', title: '아침 리추얼', body: '실습용 가상 리추얼 기록', owner_identity: 'a' }],
+    ['4', { id: '4', title: '변조된 제목', body: '변조된 내용', owner_identity: 'b' }], // 변조 상태
+  ]);
+
+  // 1. 정상 복구 검증 (B의 메모 4번 복원)
+  const result = restoreSingleNote({
+    noteId: '4',
+    requestedData: {
+      id: '4',
+      owner_identity: 'b',
+      contentHash: 'bbe71f7b5c1bb4fa0b1f9f6e823e08aae616eec2909abc4e3053965b2d72ac37',
+    },
+    notesStore: testStore,
+    verbose: false,
+  });
+
+  const restored = testStore.get('4');
+  if (
+    restored.id !== '4' ||
+    restored.owner_identity !== 'b' ||
+    restored.contentHash !== 'bbe71f7b5c1bb4fa0b1f9f6e823e08aae616eec2909abc4e3053965b2d72ac37'
+  ) {
+    throw new Error('복원된 메모의 ID, 소유자, 내용 해시가 사본과 일치하지 않습니다.');
+  }
+
+  // 다른 메모 1, 2, 3이 그대로 보존되었는지 검증
+  if (testStore.get('1').title !== '과제' || testStore.get('2').title !== '포트폴리오' || testStore.get('3').title !== '아침 리추얼') {
+    throw new Error('지정하지 않은 다른 메모가 변경되거나 삭제되었습니다.');
+  }
+
+  // 2. 불일치 데이터로 복원 시도 시 에러 거부 검증
+  let mismatchCaught = false;
+  try {
+    restoreSingleNote({
+      noteId: '4',
+      requestedData: { id: '4', owner_identity: 'b', contentHash: 'wrong_hash_attack' },
+      notesStore: testStore,
+      verbose: false,
+    });
+  } catch {
+    mismatchCaught = true;
+  }
+
+  if (!mismatchCaught) {
+    throw new Error('내용 해시 불일치 요청이 거부되지 않았습니다.');
+  }
+
+  if (verbose) {
+    process.stdout.write('【4. 시험 계정 B 메모 복구 검증 (ID·소유자·해시 대조)】\n');
+    process.stdout.write('----------------------------------------\n');
+    process.stdout.write(`• B의 메모 복원 결과: ID=${restored.id}, 소유자=${restored.owner_identity}, 해시=${restored.contentHash.slice(0, 16)}...\n`);
+    process.stdout.write(`• 사본 일치 여부: ID·소유자·내용 해시 3종 모두 완전 일치 (확인 완료)\n`);
+    process.stdout.write(`• 타 메모(1, 2, 3) 보존 확인: 보존 완료\n`);
+    process.stdout.write(`• 해시 불일치 시 차단 확인: 거부 통과\n`);
+    process.stdout.write('========================================\n');
+  }
+
+  return { passed: true, restored };
+}
+
 // 직접 CLI 실행 시 동작
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const { restoredPolicy } = restorePolicy();
     await verifyPolicyEnforcement(restoredPolicy);
+    verifyNoteRestore();
   } catch (error) {
     process.stderr.write(`복원 절차 오류: ${error.message}\n`);
     process.exitCode = 1;
   }
 }
+

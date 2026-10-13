@@ -47,5 +47,75 @@
       "other_service_metrics_rule"
     ],
     "status": "success"
+  },
+  {
+    "id": "audit_1791875277451_8t97zn",
+    "action": "restore_test_policy",
+    "at": "2026-10-13T07:07:57.451Z",
+    "restoredVersion": 1,
+    "previousVersion": 2,
+    "scopeOfChanges": [
+      "버전 변경: 2 -> 1",
+      "비인가/변조 규칙 제거: [unauthorized_backdoor_rule]",
+      "다른 서비스 규칙 보존 유지: [other_service_metrics_rule]",
+      "누락된 안전 규칙 복원: [step_up_required, zone_rule]",
+      "비인가 경로 제거: [GET /api/admin/unrestricted]",
+      "안전 경로 복원: [GET /api/notes/:id, PUT /api/notes/:id, DELETE /api/notes/:id, POST /api/auth]"
+    ],
+    "preservedOtherServiceRules": [
+      "other_service_metrics_rule"
+    ],
+    "restoredRuleIds": [
+      "device_registered",
+      "step_up_required",
+      "zone_rule",
+      "other_service_metrics_rule"
+    ],
+    "status": "success"
+  },
+  {
+    "id": "audit_1791875277454_9uiea2",
+    "action": "restore_single_note",
+    "at": "2026-10-13T07:07:57.454Z",
+    "restoredNoteId": "4",
+    "targetOwner": "b",
+    "contentHash": "bbe71f7b5c1bb4fa0b1f9f6e823e08aae616eec2909abc4e3053965b2d72ac37",
+    "status": "success",
+    "otherNotesPreserved": true
+  },
+  {
+    "id": "audit_1791875372642_kxh4w0",
+    "action": "restore_test_policy",
+    "at": "2026-10-13T07:09:32.642Z",
+    "restoredVersion": 1,
+    "previousVersion": 2,
+    "scopeOfChanges": [
+      "버전 변경: 2 -> 1",
+      "비인가/변조 규칙 제거: [unauthorized_backdoor_rule]",
+      "다른 서비스 규칙 보존 유지: [other_service_metrics_rule]",
+      "누락된 안전 규칙 복원: [step_up_required, zone_rule]",
+      "비인가 경로 제거: [GET /api/admin/unrestricted]",
+      "안전 경로 복원: [GET /api/notes/:id, PUT /api/notes/:id, DELETE /api/notes/:id, POST /api/auth]"
+    ],
+    "preservedOtherServiceRules": [
+      "other_service_metrics_rule"
+    ],
+    "restoredRuleIds": [
+      "device_registered",
+      "step_up_required",
+      "zone_rule",
+      "other_service_metrics_rule"
+    ],
+    "status": "success"
+  },
+  {
+    "id": "audit_1791875372645_ww2ngg",
+    "action": "restore_single_note",
+    "at": "2026-10-13T07:09:32.645Z",
+    "restoredNoteId": "4",
+    "targetOwner": "b",
+    "contentHash": "bbe71f7b5c1bb4fa0b1f9f6e823e08aae616eec2909abc4e3053965b2d72ac37",
+    "status": "success",
+    "otherNotesPreserved": true
   }
 ]

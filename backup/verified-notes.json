@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "resourceId": "note:1",
+    "zone": "note",
+    "title": "과제",
+    "body": "실습용 가상 과제 기록",
+    "owner_identity": "a",
+    "contentHash": "c4c5780a1b186529eb2b90adaad8a3ca7427b4dfcab9af744efb15e340649763"
+  },
+  {
+    "id": "2",
+    "resourceId": "note:2",
+    "zone": "note",
+    "title": "포트폴리오",
+    "body": "실습용 가상 포트폴리오 기록",
+    "owner_identity": "a",
+    "contentHash": "afe105e9098ba6b11e002d6d74e3a386cdea0b7d8b2c99eb28c23ba207e027d9"
+  },
+  {
+    "id": "3",
+    "resourceId": "note:3",
+    "zone": "note",
+    "title": "아침 리추얼",
+    "body": "실습용 가상 리추얼 기록",
+    "owner_identity": "a",
+    "contentHash": "cd5b959d97a23d5b18045fc21745eb209c3080c56d4061531c686c587930f76e"
+  },
+  {
+    "id": "4",
+    "resourceId": "note:4",
+    "zone": "note",
+    "title": "훈련 행정 자료",
+    "body": "실습용 가상 행정 기록",
+    "owner_identity": "b",
+    "contentHash": "bbe71f7b5c1bb4fa0b1f9f6e823e08aae616eec2909abc4e3053965b2d72ac37"
+  }
+]
