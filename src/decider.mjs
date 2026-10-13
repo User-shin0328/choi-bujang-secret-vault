@@ -13,14 +13,12 @@ export const RULE_IDS = Object.freeze([
 const DENY_RULES_PATH = resolve(import.meta.dirname, '..', 'xdr', 'deny-rules.json');
 const memoryRules = new Map();
 const deviceToUser = new Map();
-const userToDevice = new Map();
 
 /**
  * 테스트 및 재설정을 위해 바인딩 정보를 초기화합니다.
  */
 export function resetBindings() {
   deviceToUser.clear();
-  userToDevice.clear();
 }
 
 /**
@@ -76,8 +74,8 @@ export async function decide(request) {
   const activeRules = getDenyRules(validRefTime);
   const matched = activeRules.find((rule) => {
     if (rule.alertId && request.alertId === rule.alertId) return true;
-    if (rule.user && (request.subjectId === rule.user || request.srcuser === rule.user)) return true;
-    if (rule.ip && (request.signals?.source === rule.ip || request.srcip === rule.ip)) return true;
+    if (rule.user && request.subjectId === rule.user) return true;
+    if (rule.ip && request.signals?.source === rule.ip) return true;
     return false;
   });
 
@@ -141,8 +139,8 @@ export async function decide(request) {
 
   const route = request.route;
   const path = request.path;
-  const isNotesRoute = (typeof route === 'string' && (route.startsWith('GET /notes') || route.startsWith('GET /api/notes')))
-    || (typeof path === 'string' && (path.startsWith('/notes') || path.startsWith('/api/notes')));
+  const isNotesRoute = (typeof route === 'string' && route.includes('/notes'))
+    || (typeof path === 'string' && path.includes('/notes'));
   if (route && !isNotesRoute) {
     return {
       schema: 'aleph.decision.v1',
@@ -155,19 +153,7 @@ export async function decide(request) {
 
   // 5. 사용자와 기기 바인딩 검증 (그 사용자와 묶인 기기만 허용, 다른 사용자의 기기 거부)
   const boundUser = deviceToUser.get(deviceId);
-  const boundDevice = userToDevice.get(subjectId);
-
   if (boundUser && boundUser !== subjectId) {
-    return {
-      schema: 'aleph.decision.v1',
-      requestId: request.requestId,
-      decision: 'deny',
-      reasonCode: 'device_not_registered',
-      ruleIds: ['device_registered'],
-    };
-  }
-
-  if (boundDevice && boundDevice !== deviceId) {
     return {
       schema: 'aleph.decision.v1',
       requestId: request.requestId,
@@ -179,9 +165,6 @@ export async function decide(request) {
 
   if (!boundUser) {
     deviceToUser.set(deviceId, subjectId);
-  }
-  if (!boundDevice) {
-    userToDevice.set(subjectId, deviceId);
   }
 
   // 6. 모든 조건을 충족한 등록 기기의 정상 자료실 읽기 요청 허용
