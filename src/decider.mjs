@@ -12,6 +12,16 @@ export const RULE_IDS = Object.freeze([
 
 const DENY_RULES_PATH = resolve(import.meta.dirname, '..', 'xdr', 'deny-rules.json');
 const memoryRules = new Map();
+const deviceToUser = new Map();
+const userToDevice = new Map();
+
+/**
+ * 테스트 및 재설정을 위해 바인딩 정보를 초기화합니다.
+ */
+export function resetBindings() {
+  deviceToUser.clear();
+  userToDevice.clear();
+}
 
 /**
  * XDR 등에서 동적으로 생성된 거부 규칙을 등록합니다.
@@ -50,6 +60,17 @@ export function getDenyRules(referenceTime = Date.now()) {
 }
 
 export async function decide(request) {
+  if (!request || typeof request !== 'object') {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request?.requestId ?? 'unknown',
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  // 1. XDR 거부 규칙 검증 (보너스 1, 2)
   const refTime = request?.at ? Date.parse(request.at) : Date.now();
   const validRefTime = Number.isNaN(refTime) ? Date.now() : refTime;
   const activeRules = getDenyRules(validRefTime);
@@ -73,7 +94,10 @@ export async function decide(request) {
     };
   }
 
-  if (!request?.deviceRegistered) {
+  // 2. 엔진이 확인해 넘긴 신원(로그인) 및 기기 식별자 검증 (확인 실패 방어)
+  const subjectId = typeof request.subjectId === 'string' ? request.subjectId.trim() : '';
+  const deviceId = typeof request.deviceId === 'string' ? request.deviceId.trim() : '';
+  if (!subjectId || !deviceId) {
     return {
       schema: 'aleph.decision.v1',
       requestId: request.requestId,
@@ -83,6 +107,84 @@ export async function decide(request) {
     };
   }
 
+  // 3. 기기 등록 여부 검증 (미등록 기기 거부)
+  if (request.deviceRegistered !== true) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  // 4. 동작(method) 및 경로(service/route/path) 검증 (내 자료실 읽기만 허용)
+  if (request.method !== 'GET') {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  if (request.service && request.service !== 'notes') {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  const route = request.route;
+  const path = request.path;
+  const isNotesRoute = (typeof route === 'string' && (route.startsWith('GET /notes') || route.startsWith('GET /api/notes')))
+    || (typeof path === 'string' && (path.startsWith('/notes') || path.startsWith('/api/notes')));
+  if (route && !isNotesRoute) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  // 5. 사용자와 기기 바인딩 검증 (그 사용자와 묶인 기기만 허용, 다른 사용자의 기기 거부)
+  const boundUser = deviceToUser.get(deviceId);
+  const boundDevice = userToDevice.get(subjectId);
+
+  if (boundUser && boundUser !== subjectId) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  if (boundDevice && boundDevice !== deviceId) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'device_not_registered',
+      ruleIds: ['device_registered'],
+    };
+  }
+
+  if (!boundUser) {
+    deviceToUser.set(deviceId, subjectId);
+  }
+  if (!boundDevice) {
+    userToDevice.set(subjectId, deviceId);
+  }
+
+  // 6. 모든 조건을 충족한 등록 기기의 정상 자료실 읽기 요청 허용
   return {
     schema: 'aleph.decision.v1',
     requestId: request.requestId,
