@@ -209,7 +209,6 @@ npm run xdr:run -- brute-force
    - 엔진이 확인해 전달한 로그인(`subjectId`), 기기 식별자(`deviceId`), 등록 상태(`deviceRegistered`), 동작(`method: 'GET'`), 경로(`service: 'notes'`, notes 읽기 경로)만 검증합니다.
    - 등록되어 해당 사용자와 묶인 기기만 자료실 읽기를 허용(`decision: 'allow'`, `reasonCode: 'approved'`)합니다.
    - 미등록 기기(`deviceRegistered !== true`), 식별자 누락(확인 실패), 다른 사용자의 기기(바인딩 불일치), 읽기 외 동작/경로는 즉각 거부(`decision: 'deny'`, `reasonCode: 'device_not_registered'`)합니다.
-   - 기존 XDR 차단 규칙(`xdr.brute_force.deny`, `xdr.web_injection.deny`) 검사도 그대로 유지됩니다.
 
 ### 확인 순서
 이번 과정에는 별도의 클라이언트 접속 프로그램 설치가 없으며, 미등록 기기 접근 시험은 심판 엔진이 가상 요청으로 전송하여 판정합니다.
