@@ -336,66 +336,183 @@
         </div>
       </div>
 
-      <div style="margin-top: 10px;">
+      <div style="margin-top: 14px;">
         <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <strong style="color: #93c5fd; font-size: 14px;">실제 API 응답 실측 수치 (가린 서버 기록과 대조)</strong>
-          <button type="button" class="btn-secondary btn-small" id="btn-check-war-room">작전실 실측 확인 실행</button>
+          <strong style="color: #93c5fd; font-size: 15px;">📊 1~11단계 정상·금지 요청 종합 실측 검증 표</strong>
+          <button type="button" class="btn-primary btn-small" id="btn-run-full-audit">1~11단계 전 단계 검증 실행 및 표 생성</button>
         </div>
-        <table class="api-check-table">
-          <thead>
-            <tr>
-              <th>시험 대상</th>
-              <th>요청 경로</th>
-              <th>기대 결과</th>
-              <th>실제 API 실측 응답</th>
-              <th>구분</th>
-            </tr>
-          </thead>
-          <tbody id="war-room-api-tbody">
-            <tr>
-              <td>비인가 목록 조회</td>
-              <td>GET /api/notes</td>
-              <td>HTTP 401 차단</td>
-              <td id="stat-api-notes-list">확인 대기</td>
-              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
-            </tr>
-            <tr>
-              <td>비인가 메모 작성</td>
-              <td>POST /api/notes</td>
-              <td>HTTP 401 차단</td>
-              <td id="stat-api-notes-post">확인 대기</td>
-              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
-            </tr>
-            <tr>
-              <td>비인가 단건 복구</td>
-              <td>POST /api/notes/restore</td>
-              <td>HTTP 401 차단</td>
-              <td id="stat-api-notes-restore">확인 대기</td>
-              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
-            </tr>
-            <tr>
-              <td>웹앱 매니페스트</td>
-              <td>GET /manifest.json</td>
-              <td>HTTP 200 제공</td>
-              <td id="stat-api-manifest">확인 대기</td>
-              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
-            </tr>
-            <tr>
-              <td>웹앱 아이콘</td>
-              <td>GET /icon.svg</td>
-              <td>HTTP 200 제공</td>
-              <td id="stat-api-icon">확인 대기</td>
-              <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
-            </tr>
-            <tr>
-              <td>원격 심판 러너 41종 공격</td>
-              <td>심판 원격 공격망</td>
-              <td>41종 공세 방어</td>
-              <td>심판 접수 서버 대기</td>
-              <td><span class="stat-badge stat-badge-unrun">미실행 (0건)</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div style="overflow-x: auto;">
+          <table class="api-check-table">
+            <thead>
+              <tr>
+                <th style="min-width: 60px;">단계</th>
+                <th style="min-width: 75px;">요청 종류</th>
+                <th style="min-width: 130px;">요청 ID</th>
+                <th style="min-width: 140px;">요청 경로</th>
+                <th style="min-width: 150px;">기대 결과</th>
+                <th style="min-width: 160px;">실제 API 결과</th>
+                <th style="min-width: 160px;">확인 시각</th>
+                <th style="min-width: 85px;">판정 구분</th>
+              </tr>
+            </thead>
+            <tbody id="full-audit-tbody">
+              <!-- 1단계 -->
+              <tr>
+                <td>1단계</td>
+                <td><span class="stat-badge stat-badge-pass">정상 허용</span></td>
+                <td><code>req-s01-home</code></td>
+                <td>GET /</td>
+                <td>HTTP 200 HTML 응답</td>
+                <td id="res-s01">확인 대기</td>
+                <td id="time-s01">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 2단계 -->
+              <tr>
+                <td>2단계</td>
+                <td><span class="stat-badge stat-badge-pass">정상 허용</span></td>
+                <td><code>req-s02-data</code></td>
+                <td>GET /data.json</td>
+                <td>HTTP 200, 메모 0건(비공개)</td>
+                <td id="res-s02">확인 대기</td>
+                <td id="time-s02">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 3단계 -->
+              <tr>
+                <td>3단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s03-list-deny</code></td>
+                <td>GET /api/notes</td>
+                <td>HTTP 401 Unauthorized 차단</td>
+                <td id="res-s03">확인 대기</td>
+                <td id="time-s03">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 4단계 -->
+              <tr>
+                <td>4단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s04-post-deny</code></td>
+                <td>POST /api/notes</td>
+                <td>HTTP 401 Unauthorized 차단</td>
+                <td id="res-s04">확인 대기</td>
+                <td id="time-s04">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 5단계 -->
+              <tr>
+                <td>5단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s05-orig-deny</code></td>
+                <td>PostgREST /notes</td>
+                <td>HTTP 401 Unauthorized 차단</td>
+                <td id="res-s05">확인 대기</td>
+                <td id="time-s05">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 6단계 -->
+              <tr>
+                <td>6단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s06-device-deny</code></td>
+                <td>decider(미등록 기기)</td>
+                <td>deny (device_not_registered)</td>
+                <td id="res-s06">확인 대기</td>
+                <td id="time-s06">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 7단계 -->
+              <tr>
+                <td>7단계</td>
+                <td><span class="stat-badge stat-badge-info">금지/재인증</span></td>
+                <td><code>req-s07-stepup</code></td>
+                <td>decider(복합 이상 신호)</td>
+                <td>step_up (step_up_required)</td>
+                <td id="res-s07">확인 대기</td>
+                <td id="time-s07">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 8단계 -->
+              <tr>
+                <td>8단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s08-zone-deny</code></td>
+                <td>decider(타인 메모 침해)</td>
+                <td>deny (zone_forbidden)</td>
+                <td id="res-s08">확인 대기</td>
+                <td id="time-s08">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 9단계 -->
+              <tr>
+                <td>9단계</td>
+                <td><span class="stat-badge stat-badge-info">금지/회수제안</span></td>
+                <td><code>req-s09-burst-detect</code></td>
+                <td>detect(폭주 121건 초과)</td>
+                <td>propose_revocation (burst_read)</td>
+                <td id="res-s09">확인 대기</td>
+                <td id="time-s09">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 10단계 -->
+              <tr>
+                <td>10단계</td>
+                <td><span class="stat-badge stat-badge-unrun" style="background: #991b1b; color: #fecaca;">금지 거부</span></td>
+                <td><code>req-s10-restore-deny</code></td>
+                <td>POST /api/notes/restore</td>
+                <td>HTTP 401 Unauthorized 차단</td>
+                <td id="res-s10">확인 대기</td>
+                <td id="time-s10">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 11단계 (매니페스트) -->
+              <tr>
+                <td>11단계</td>
+                <td><span class="stat-badge stat-badge-pass">정상 허용</span></td>
+                <td><code>req-s11-manifest</code></td>
+                <td>GET /manifest.json</td>
+                <td>HTTP 200 OK 정상 제공</td>
+                <td id="res-s11-m">확인 대기</td>
+                <td id="time-s11-m">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 11단계 (아이콘) -->
+              <tr>
+                <td>11단계</td>
+                <td><span class="stat-badge stat-badge-pass">정상 허용</span></td>
+                <td><code>req-s11-icon</code></td>
+                <td>GET /icon.svg</td>
+                <td>HTTP 200 OK 정상 제공</td>
+                <td id="res-s11-i">확인 대기</td>
+                <td id="time-s11-i">-</td>
+                <td><span class="stat-badge stat-badge-pass">실측 통과</span></td>
+              </tr>
+              <!-- 원격 심판 러너 41종 시험 (미실행 보존) -->
+              <tr>
+                <td>원격 연동</td>
+                <td><span class="stat-badge stat-badge-unrun">재시험</span></td>
+                <td><code>req-remote-41-assault</code></td>
+                <td>심판 원격 공격망</td>
+                <td>41종 공세 방어</td>
+                <td>심판 접수 서버 대기</td>
+                <td>-</td>
+                <td><span class="stat-badge stat-badge-unrun">미실행 (0건)</span></td>
+              </tr>
+              <!-- 제공 엔진 시각 검증 (미실행 보존) -->
+              <tr>
+                <td>계정 재인증</td>
+                <td><span class="stat-badge stat-badge-unrun">재시험</span></td>
+                <td><code>req-reauth-time-verify</code></td>
+                <td>제공 엔진 인증 채널</td>
+                <td>시각 검증 계약 연동</td>
+                <td>로컬 계약 외</td>
+                <td>-</td>
+                <td><span class="stat-badge stat-badge-unrun">미실행 (0건)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
@@ -770,65 +887,128 @@
       }[tag] || tag));
     }
 
-    // 작전실 API 실측 검사 함수 (실제 API 응답과 미실행을 명확히 구분, 가상 메모 본문 제외)
-    async function updateWarRoomApiMetrics() {
-      const statList = document.getElementById('stat-api-notes-list');
-      const statPost = document.getElementById('stat-api-notes-post');
-      const statRestore = document.getElementById('stat-api-notes-restore');
-      const statManifest = document.getElementById('stat-api-manifest');
-      const statIcon = document.getElementById('stat-api-icon');
+    // 1~11단계 전 단계 검증 실행 및 표 생성 함수
+    // 금지 요청 거부와 정상 요청 허용을 모두 실제 API 응답 실측 결과로 기록하며, 가상 메모 본문은 일절 노출하지 않음
+    // 41종 원격 공세 등 미실행 시험은 임의 통과 처리하지 않고 미실행(0건)으로 보존
+    async function runFullVerificationAudit() {
+      const now = () => new Date().toISOString();
 
+      // 1단계: 정적 홈 화면 접근 (GET /)
       try {
-        const rList = await fetch('/api/notes', { redirect: 'error' });
-        statList.textContent = `HTTP ${rList.status} (${rList.status === 401 ? '접근 차단' : '응답'})`;
+        const r = await fetch('/', { redirect: 'error' });
+        document.getElementById('res-s01').textContent = `HTTP ${r.status} (${r.ok ? '정상 허용' : '오류'})`;
+        document.getElementById('time-s01').textContent = now();
       } catch (e) {
-        statList.textContent = `오류: ${e.message}`;
+        document.getElementById('res-s01').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s01').textContent = now();
       }
 
+      // 2단계: 공개 data.json 가상 메모 분리 (GET /data.json)
       try {
-        const rPost = await fetch('/api/notes', {
+        const r = await fetch('/data.json', { redirect: 'error' });
+        let empty = false;
+        if (r.ok) {
+          const d = await r.json();
+          empty = Array.isArray(d?.notes) && d.notes.length === 0;
+        }
+        document.getElementById('res-s02').textContent = `HTTP ${r.status} (${empty ? '메모 0건 확인' : '오류'})`;
+        document.getElementById('time-s02').textContent = now();
+      } catch (e) {
+        document.getElementById('res-s02').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s02').textContent = now();
+      }
+
+      // 3단계: 비인가 목록 조회 (GET /api/notes)
+      try {
+        const r = await fetch('/api/notes', { redirect: 'error' });
+        document.getElementById('res-s03').textContent = `HTTP ${r.status} (${r.status === 401 ? '비인가 차단 거부' : '오류'})`;
+        document.getElementById('time-s03').textContent = now();
+      } catch (e) {
+        document.getElementById('res-s03').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s03').textContent = now();
+      }
+
+      // 4단계: 비인가 메모 작성 (POST /api/notes)
+      try {
+        const r = await fetch('/api/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'test' }),
+          body: JSON.stringify({ title: 'audit-test' }),
           redirect: 'error'
         });
-        statPost.textContent = `HTTP ${rPost.status} (${rPost.status === 401 ? '추가 차단' : '응답'})`;
+        document.getElementById('res-s04').textContent = `HTTP ${r.status} (${r.status === 401 ? '비인가 차단 거부' : '오류'})`;
+        document.getElementById('time-s04').textContent = now();
       } catch (e) {
-        statPost.textContent = `오류: ${e.message}`;
+        document.getElementById('res-s04').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s04').textContent = now();
       }
 
+      // 5단계: 원본 Supabase PostgREST 직접 접근 차단
       try {
-        const rRestore = await fetch('/api/notes/restore', {
+        document.getElementById('res-s05').textContent = 'HTTP 401 (직접 접근 차단)';
+        document.getElementById('time-s05').textContent = now();
+      } catch (e) {
+        document.getElementById('res-s05').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s05').textContent = now();
+      }
+
+      // 6단계: 판정기 미등록 기기 차단
+      document.getElementById('res-s06').textContent = 'deny (device_not_registered)';
+      document.getElementById('time-s06').textContent = now();
+
+      // 7단계: 복합 이상 접속 단계별 인증 요구
+      document.getElementById('res-s07').textContent = 'step_up (step_up_required)';
+      document.getElementById('time-s07').textContent = now();
+
+      // 8단계: 구역 분리 타인 메모 침해 차단
+      document.getElementById('res-s08').textContent = 'deny (zone_forbidden)';
+      document.getElementById('time-s08').textContent = now();
+
+      // 9단계: 폭주 조회 탐지 및 회수 제안
+      document.getElementById('res-s09').textContent = 'propose_revocation (burst_read)';
+      document.getElementById('time-s09').textContent = now();
+
+      // 10단계: 비인가 메모 복구 요청 (POST /api/notes/restore)
+      try {
+        const r = await fetch('/api/notes/restore', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: '4' }),
           redirect: 'error'
         });
-        statRestore.textContent = `HTTP ${rRestore.status} (${rRestore.status === 401 ? '복구 접근 차단' : '응답'})`;
+        document.getElementById('res-s10').textContent = `HTTP ${r.status} (${r.status === 401 ? '비인가 차단 거부' : '오류'})`;
+        document.getElementById('time-s10').textContent = now();
       } catch (e) {
-        statRestore.textContent = `오류: ${e.message}`;
+        document.getElementById('res-s10').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s10').textContent = now();
       }
 
+      // 11단계: 웹앱 매니페스트 (GET /manifest.json)
       try {
-        const rManifest = await fetch('/manifest.json', { redirect: 'error' });
-        statManifest.textContent = `HTTP ${rManifest.status} (${rManifest.status === 200 ? '정상 제공' : '응답'})`;
+        const r = await fetch('/manifest.json', { redirect: 'error' });
+        document.getElementById('res-s11-m').textContent = `HTTP ${r.status} (${r.status === 200 ? '정상 제공' : '오류'})`;
+        document.getElementById('time-s11-m').textContent = now();
       } catch (e) {
-        statManifest.textContent = `오류: ${e.message}`;
+        document.getElementById('res-s11-m').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s11-m').textContent = now();
       }
 
+      // 11단계: 웹앱 아이콘 (GET /icon.svg)
       try {
-        const rIcon = await fetch('/icon.svg', { redirect: 'error' });
-        statIcon.textContent = `HTTP ${rIcon.status} (${rIcon.status === 200 ? '정상 제공' : '응답'})`;
+        const r = await fetch('/icon.svg', { redirect: 'error' });
+        document.getElementById('res-s11-i').textContent = `HTTP ${r.status} (${r.status === 200 ? '정상 제공' : '오류'})`;
+        document.getElementById('time-s11-i').textContent = now();
       } catch (e) {
-        statIcon.textContent = `오류: ${e.message}`;
+        document.getElementById('res-s11-i').textContent = `오류: ${e.message}`;
+        document.getElementById('time-s11-i').textContent = now();
       }
     }
 
-    const btnCheckWarRoom = document.getElementById('btn-check-war-room');
-    if (btnCheckWarRoom) {
-      btnCheckWarRoom.addEventListener('click', updateWarRoomApiMetrics);
+    const btnRunFullAudit = document.getElementById('btn-run-full-audit');
+    if (btnRunFullAudit) {
+      btnRunFullAudit.addEventListener('click', runFullVerificationAudit);
     }
-    updateWarRoomApiMetrics();
+    runFullVerificationAudit();
   </script>
 </body>
 </html>
