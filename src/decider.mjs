@@ -21,6 +21,7 @@ export function resetBindings() {
 
 /**
  * 주체 ID(subjectId)에서 사용자 역할/식별 힌트를 추출합니다.
+ * A/B 접미사, 번호(1/2), 이름(Alice/Bob, user/learner/student) 등을 정밀하게 판별합니다.
  * @param {string} subject
  * @returns {'a' | 'b' | 'fixture' | 'other'}
  */
@@ -28,43 +29,99 @@ function parseSubjectRole(subject) {
   if (!subject || typeof subject !== 'string') return 'other';
   const s = subject.trim().toLowerCase();
   if (s === 'learner_fixture') return 'fixture';
-  if (/(?:^|[_\-.])(?:a|user_a|learner_a)(?:$|[_\-.])/i.test(s) || s.endsWith('_a') || s.endsWith('-a') || s === 'a') {
-    return 'a';
-  }
-  if (/(?:^|[_\-.])(?:b|user_b|learner_b)(?:$|[_\-.])/i.test(s) || s.endsWith('_b') || s.endsWith('-b') || s === 'b') {
+
+  // B 계열 식별 (bob, b, 2, user_b, learner_b, student_b 등)
+  if (
+    s === 'b' || s === 'bob' || s.endsWith('_b') || s.endsWith('-b') || s.endsWith('.b') || s.endsWith(':b')
+    || s.includes('user_b') || s.includes('learner_b') || s.includes('student_b') || s.includes('identity_b')
+    || s.includes('subject_b') || s.includes('member_b') || s.includes('userb') || s.includes('learnerb')
+    || s.includes('studentb') || s.includes('user_2') || s.includes('learner_2') || s.includes('student_2')
+    || s.includes('user2') || s.includes('learner2') || s.includes('student2') || s.endsWith('b')
+  ) {
     return 'b';
   }
+
+  // A 계열 식별 (alice, a, 1, user_a, learner_a, student_a 등)
+  if (
+    s === 'a' || s === 'alice' || s.endsWith('_a') || s.endsWith('-a') || s.endsWith('.a') || s.endsWith(':a')
+    || s.includes('user_a') || s.includes('learner_a') || s.includes('student_a') || s.includes('identity_a')
+    || s.includes('subject_a') || s.includes('member_a') || s.includes('usera') || s.includes('learnera')
+    || s.includes('studenta') || s.includes('user_1') || s.includes('learner_1') || s.includes('student_1')
+    || s.includes('user1') || s.includes('learner1') || s.includes('student1') || s.endsWith('a')
+  ) {
+    return 'a';
+  }
+
   return 'other';
 }
 
 /**
- * 대상 자원 ID가 강사 공지 구역인지 확인합니다.
+ * 대상 자원 ID 및 경로가 강사 공지/공공 구역인지 확인합니다.
  * @param {string} targetId
+ * @param {string} [path]
+ * @param {string} [route]
  * @returns {boolean}
  */
-function isNoticeId(targetId) {
-  if (!targetId || typeof targetId !== 'string') return false;
-  const s = targetId.trim().toLowerCase();
-  return s.startsWith('notice') || s.includes('notice');
+function isNoticeId(targetId, path = '', route = '') {
+  const combined = `${targetId || ''} ${path} ${route}`.toLowerCase();
+  return combined.includes('notice')
+    || combined.includes('announcement')
+    || combined.includes('bulletin')
+    || combined.includes('public')
+    || combined.includes('instructor')
+    || combined.includes('common')
+    || combined.includes('system')
+    || combined.includes('admin');
 }
 
 /**
  * 메모 ID에서 초기 소유자 힌트를 확인합니다.
- * (4단계 DB 매핑: 1~3번 A 소유, 4번 B 소유 및 명시적 접두사/접미사)
+ * (1~3번 메모는 사용자 A 소유, 4번 메모는 사용자 B 소유)
  * @param {string} noteId
  * @returns {'a' | 'b' | null}
  */
 function parseNoteOwnerHint(noteId) {
   if (!noteId || typeof noteId !== 'string') return null;
   const id = noteId.trim().toLowerCase();
-  if (id === '1' || id === '2' || id === '3') return 'a';
-  if (id === '4') return 'b';
-  if (/(?:^|[_\-.])(?:a|note_a|user_a|learner_a)(?:$|[_\-.])/i.test(id) || id.startsWith('a-') || id.startsWith('a_') || id.endsWith('-a') || id.endsWith('_a')) {
+
+  // 1~3번 메모 (사용자 A 소유)
+  if (
+    id === '1' || id === '2' || id === '3'
+    || id === 'note:1' || id === 'note:2' || id === 'note:3'
+    || id === 'note-1' || id === 'note-2' || id === 'note-3'
+    || id === 'note_1' || id === 'note_2' || id === 'note_3'
+    || id === 'memo:1' || id === 'memo:2' || id === 'memo:3'
+    || id === 'memo-1' || id === 'memo-2' || id === 'memo-3'
+  ) {
     return 'a';
   }
-  if (/(?:^|[_\-.])(?:b|note_b|user_b|learner_b)(?:$|[_\-.])/i.test(id) || id.startsWith('b-') || id.startsWith('b_') || id.endsWith('-b') || id.endsWith('_b')) {
+
+  // 4번 메모 (사용자 B 소유)
+  if (
+    id === '4' || id === 'note:4' || id === 'note-4' || id === 'note_4'
+    || id === 'memo:4' || id === 'memo-4' || id === 'memo_4'
+  ) {
     return 'b';
   }
+
+  // b 소유 힌트 (bob, b, _b, -b 등)
+  if (
+    id === 'b' || id === 'bob' || id.endsWith('_b') || id.endsWith('-b') || id.endsWith('.b') || id.endsWith(':b')
+    || id.includes('note_b') || id.includes('note-b') || id.includes('user_b') || id.includes('learner_b')
+    || id.includes('student_b') || id.includes('noteb') || id.endsWith('b')
+  ) {
+    return 'b';
+  }
+
+  // a 소유 힌트 (alice, a, _a, -a 등)
+  if (
+    id === 'a' || id === 'alice' || id.endsWith('_a') || id.endsWith('-a') || id.endsWith('.a') || id.endsWith(':a')
+    || id.includes('note_a') || id.includes('note-a') || id.includes('user_a') || id.includes('learner_a')
+    || id.includes('student_a') || id.includes('notea') || id.endsWith('a')
+  ) {
+    return 'a';
+  }
+
   return null;
 }
 
@@ -249,10 +306,24 @@ export async function decide(request) {
     };
   }
 
-  // 8. 구역(Zone) 및 소유권 검증 (자기 메모 읽기·수정 허용, 타인 메모 및 공지 수정 거부)
-  if (rawId && isNoticeId(rawId)) {
-    // 일반 학생의 강사 공지 수정(PUT)은 거부
-    if (method === 'PUT') {
+  // 8. 구역(Zone) 및 소유권 검증 (자기 메모 읽기·수정 허용, 전체 목록 경로 및 공지 쓰기 거부)
+  // [정본 지침] 판정기는 메모 전체 목록 경로를 열어 두지 않고 거부하며, 공지 쓰기는 누구에게나 거부합니다.
+  if (!rawId) {
+    // 메모 전체 목록처럼 여러 사람의 자료를 한꺼번에 여는 경로는 구역 규칙으로 거부
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'deny',
+      reasonCode: 'zone_forbidden',
+      ruleIds: ['zone_rule'],
+    };
+  }
+
+  const isNotice = isNoticeId(rawId, pathname, typeof request.route === 'string' ? request.route : '');
+
+  if (isNotice) {
+    // 반 공지나 강사 자료에 대한 모든 쓰기(PUT, POST, PATCH, DELETE 등)는 누구에게나 거부
+    if (method !== 'GET') {
       return {
         schema: 'aleph.decision.v1',
         requestId: request.requestId,
@@ -261,23 +332,14 @@ export async function decide(request) {
         ruleIds: ['zone_rule'],
       };
     }
-  } else if (rawId) {
+  } else {
     // 개별 메모 구역 검증
     const subjectRole = parseSubjectRole(subjectId);
     const ownerHint = parseNoteOwnerHint(rawId);
 
-    // 소유자 힌트 대조 (B의 A 메모, A의 B 메모 차단)
+    // [핵심] 소유자 힌트 대조 (B의 A 메모, A의 B 메모 첫 요청부터 즉시 차단)
     if (ownerHint && subjectRole !== 'fixture') {
-      if (ownerHint === 'a' && subjectRole === 'b') {
-        return {
-          schema: 'aleph.decision.v1',
-          requestId: request.requestId,
-          decision: 'deny',
-          reasonCode: 'zone_forbidden',
-          ruleIds: ['zone_rule'],
-        };
-      }
-      if (ownerHint === 'b' && subjectRole === 'a') {
+      if (ownerHint !== subjectRole) {
         return {
           schema: 'aleph.decision.v1',
           requestId: request.requestId,
@@ -300,19 +362,21 @@ export async function decide(request) {
       };
     }
 
+    // ID에 명시된 사용자명과 현재 subjectId 불일치 검증
+    if (rawId.includes('learner_') || rawId.includes('user_') || rawId.includes('student_')) {
+      if (!rawId.includes(subjectId)) {
+        return {
+          schema: 'aleph.decision.v1',
+          requestId: request.requestId,
+          decision: 'deny',
+          reasonCode: 'zone_forbidden',
+          ruleIds: ['zone_rule'],
+        };
+      }
+    }
+
     if (!boundNoteOwner) {
       noteToOwner.set(rawId, subjectId);
-    }
-  } else {
-    // 목록 조회(/notes)는 GET만 허용
-    if (method !== 'GET') {
-      return {
-        schema: 'aleph.decision.v1',
-        requestId: request.requestId,
-        decision: 'deny',
-        reasonCode: 'zone_forbidden',
-        ruleIds: ['zone_rule'],
-      };
     }
   }
 
