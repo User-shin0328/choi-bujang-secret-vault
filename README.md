@@ -261,6 +261,37 @@ npm run xdr:run -- brute-force
 - 알림 로그: `xdr/alerts.log`
 - 거부 규칙: `xdr/deny-rules.json`
 
+## 보너스 5: 권한 가로채기를 잡아 냅니다 (XDR)
+
+보너스 5단계에서는 Wazuh 계정 및 그룹 경보를 분석하여 MITRE ATT&CK T1068(권한 상승 악용) 및 T1078(정상 계정 도용) 권한 가로채기(Privilege Escalation) 공격을 탐지하고, 차단 후보를 ZTNA 판정기 거부 규칙으로 연동하며 알림 로그를 기록하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **경보 추출 및 패턴 정의**:
+   - `xdr/privilege/read-alerts.mjs`: Wazuh 경보 목록에서 시각, 출발 IP, 계정, 규칙 수준, 설명을 추출하며 토큰/비밀키 등 민감값은 마스킹 처리합니다.
+   - `xdr/privilege/patterns.json`: T1068 및 T1078 기반 비인가 계정의 관리자 그룹 임의 추가, 처음 보는 주소 또는 권한 도용을 통한 관리자 명령 실행, 업무 시간 밖 이상 시각 권한 상승 및 관리자 명령 실행 패턴을 정의합니다.
+2. **독립형 공격 판단 모듈 (`xdr/privilege/decide.mjs`)**:
+   - 심판 환경 요구사항에 따라 외부 import 및 파일/네트워크 I/O 없이 순수 패턴 상수와 확신도 계산으로 독립 실행됩니다.
+   - 확신도 0.85 이상(수준 10 이상): `block` (명확한 공격 9건, 확신도 0.90)
+   - 확신도 0.5 이상: `alert` (애매한 시도 8건, 확신도 0.60)
+   - 확신도 0.5 미만: `record` (정상 이벤트 9건, 확신도 0.10)
+3. **대응 모듈 및 ZTNA 판정기 연동 (`xdr/privilege/respond.mjs`)**:
+   - `decide.mjs`의 판단 결과 중 차단 후보(`block`)만 만료 시각(24시간)과 근거 경보 번호(`alertId`)를 부여받아 `xdr/deny-rules.json`에 `xdr.privilege.deny` 규칙으로 등록됩니다.
+   - 정상 이벤트(`record`)는 거부 규칙에 일체 등록되지 않아 정상 사용자가 차단되지 않습니다.
+   - 알림은 `xdr/alerts.log`에 한 줄씩 기록됩니다.
+
+### 다시 실행하고 확인하는 방법
+1. 권한 가로채기 공격 판단 및 결과 생성:
+   ```bash
+   npm run xdr:run -- privilege
+   ```
+2. ZTNA 거부 규칙 등록 및 알림 로그 기록:
+   ```bash
+   node xdr/privilege/respond.mjs
+   ```
+- 결과 파일: `xdr/privilege/result.json` (block: 9, alert: 8, record: 9)
+- 알림 로그: `xdr/alerts.log`
+- 거부 규칙: `xdr/deny-rules.json`
+
 ## 6단계: 등록한 기기만 자료실에 들어옵니다
 
 6단계에서는 판정 요청 계약(`docs/DECIDER_REQUEST.md`)에 따라 판정기(`src/decider.mjs`)에 기기 등록 여부(`deviceRegistered`)를 검증하는 `device_registered` 규칙을 적용했습니다.
