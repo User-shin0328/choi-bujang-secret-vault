@@ -342,5 +342,85 @@
     "ip": "198.51.100.27",
     "user": "user08",
     "reason": "비인가 계정의 관리자 그룹 임의 추가"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-01",
+    "expiresAt": "2026-10-15T01:05:55.068Z",
+    "ip": "192.0.2.20",
+    "user": "user01",
+    "reason": "처음 보는 목적지로의 대용량 자료 전송 및 유출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-02",
+    "expiresAt": "2026-10-15T01:05:55.071Z",
+    "ip": "192.0.2.20",
+    "user": "user01",
+    "reason": "업무 시간 밖 이상 시각 압축 파일 외부 반출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-03",
+    "expiresAt": "2026-10-15T01:05:55.073Z",
+    "ip": "198.51.100.20",
+    "user": "user02",
+    "reason": "처음 보는 목적지로의 대용량 자료 전송 및 유출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-04",
+    "expiresAt": "2026-10-15T01:05:55.074Z",
+    "ip": "203.0.113.20",
+    "user": "user03",
+    "reason": "비인가 포트 및 명령 통로를 통한 자료 반복 전송"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-05",
+    "expiresAt": "2026-10-15T01:05:55.075Z",
+    "ip": "192.0.2.25",
+    "user": "user04",
+    "reason": "처음 보는 목적지로의 대용량 자료 전송 및 유출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-06",
+    "expiresAt": "2026-10-15T01:05:55.076Z",
+    "ip": "198.51.100.25",
+    "user": "user05",
+    "reason": "업무 시간 밖 이상 시각 압축 파일 외부 반출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-07",
+    "expiresAt": "2026-10-15T01:05:55.078Z",
+    "ip": "203.0.113.25",
+    "user": "user06",
+    "reason": "업무 시간 밖 이상 시각 압축 파일 외부 반출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-08",
+    "expiresAt": "2026-10-15T01:05:55.079Z",
+    "ip": "192.0.2.26",
+    "user": "user07",
+    "reason": "처음 보는 목적지로의 대용량 자료 전송 및 유출"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-09",
+    "expiresAt": "2026-10-15T01:05:55.080Z",
+    "ip": "198.51.100.26",
+    "user": "user08",
+    "reason": "비인가 포트 및 명령 통로를 통한 자료 반복 전송"
+  },
+  {
+    "ruleId": "xdr.exfiltration.deny",
+    "alertId": "ex-10",
+    "expiresAt": "2026-10-15T01:05:55.082Z",
+    "ip": "203.0.113.26",
+    "user": "user01",
+    "reason": "업무 시간 밖 이상 시각 압축 파일 외부 반출"
   }
 ]
