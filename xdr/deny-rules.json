@@ -206,5 +206,69 @@
     "ip": "203.0.113.31",
     "user": "",
     "reason": "요청 머리글 내 원격 조회 구문 삽입"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-01",
+    "expiresAt": "2026-10-15T00:33:14.548Z",
+    "ip": "203.0.113.12",
+    "user": "user01",
+    "reason": "서명 없는 새 서비스 등록 및 변경"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-02",
+    "expiresAt": "2026-10-15T00:33:14.553Z",
+    "ip": "203.0.113.12",
+    "user": "user01",
+    "reason": "임시 경로 프로그램 기반 낯선 예약 작업 등록"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-03",
+    "expiresAt": "2026-10-15T00:33:14.554Z",
+    "ip": "198.51.100.12",
+    "user": "user02",
+    "reason": "시작 폴더 내 미인가 프로그램 추가 및 변경"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-04",
+    "expiresAt": "2026-10-15T00:33:14.555Z",
+    "ip": "192.0.2.12",
+    "user": "user03",
+    "reason": "서명 없는 새 서비스 등록 및 변경"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-05",
+    "expiresAt": "2026-10-15T00:33:14.556Z",
+    "ip": "203.0.113.19",
+    "user": "user04",
+    "reason": "임시 경로 프로그램 기반 낯선 예약 작업 등록"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-06",
+    "expiresAt": "2026-10-15T00:33:14.557Z",
+    "ip": "198.51.100.19",
+    "user": "user05",
+    "reason": "서명 없는 새 서비스 등록 및 변경"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-07",
+    "expiresAt": "2026-10-15T00:33:14.558Z",
+    "ip": "192.0.2.19",
+    "user": "user06",
+    "reason": "시작 폴더 내 미인가 프로그램 추가 및 변경"
+  },
+  {
+    "ruleId": "xdr.persistence.deny",
+    "alertId": "ps-08",
+    "expiresAt": "2026-10-15T00:33:14.559Z",
+    "ip": "203.0.113.33",
+    "user": "user07",
+    "reason": "서명 없는 새 서비스 등록 및 변경"
   }
 ]
