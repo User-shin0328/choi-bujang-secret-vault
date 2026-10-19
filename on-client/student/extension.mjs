@@ -39,6 +39,17 @@ const DECISION_LABELS = {
   },
 };
 
+const ACCESS_STATUS_LABELS = {
+  allowed: '접근 허용',
+  denied: '접근 거부',
+  unknown: '확인 불가',
+};
+
+const EVENT_KIND_LABELS = {
+  access: '접속',
+  xdr: 'XDR 경보',
+};
+
 export function createStudentView() {
   return {
     renderIdentity({ me, devices, sessions } = {}) {
@@ -234,7 +245,319 @@ export function createStudentView() {
 
       return container;
     },
-    renderEvents() { return '학생 구현 대기: 본인 접속·XDR 기록을 연결하세요.'; },
+    renderEvents({ status, mode, data, error } = {}) {
+      const container = document.createElement('div');
+      container.className = 'student-events-view';
+      container.setAttribute('data-student-section', 'events');
+
+      // 1. 모드 안내 (loading, error, ok 모든 상태에서 전달받은 mode 표시)
+      const currentMode = mode || 'unknown';
+      const modeText = MODE_LABELS[currentMode] || '확인 불가';
+      const modeEl = document.createElement('div');
+      modeEl.className = 'student-mode-badge';
+      modeEl.textContent = `모드: ${modeText}`;
+      container.appendChild(modeEl);
+
+      // 2. loading 상태 처리
+      if (!status || status === 'loading') {
+        const loadingEl = document.createElement('p');
+        loadingEl.className = 'student-events-loading';
+        loadingEl.textContent = '보안 기록을 불러오는 중…';
+        container.appendChild(loadingEl);
+        return container;
+      }
+
+      // 3. error 상태 처리 (빈 목록과 명확히 구분)
+      if (status === 'error') {
+        const errorWrap = document.createElement('div');
+        errorWrap.className = 'student-events-error status-alert';
+        errorWrap.setAttribute('data-student-status', 'error');
+
+        const errP = document.createElement('p');
+        const msg = error && error.message ? error.message : '확인 불가';
+        errP.textContent = `기록을 불러오지 못했습니다: ${msg}`;
+        errorWrap.appendChild(errP);
+
+        container.appendChild(errorWrap);
+        return container;
+      }
+
+      // 4. ok 상태: data가 배열인지 확인
+      const eventsList = Array.isArray(data) ? data : [];
+      if (eventsList.length === 0) {
+        const emptyP = document.createElement('p');
+        emptyP.className = 'student-events-empty';
+        emptyP.textContent = '표시할 기록이 없습니다.';
+        container.appendChild(emptyP);
+        return container;
+      }
+
+      // at 기준 최신순 정렬 (원본 배열 복사)
+      const sortedEvents = [...eventsList].sort((a, b) => {
+        const timeA = a.at ? Date.parse(a.at) : 0;
+        const timeB = b.at ? Date.parse(b.at) : 0;
+        return timeB - timeA;
+      });
+
+      // 필터 및 상세 선택 상태 (함수 스코프 내 클로저 변수)
+      let currentKindFilter = 'all';
+      let currentAppFilter = 'all';
+      let currentAccessFilter = 'all';
+      let selectedEventId = null;
+
+      // 5. 필터 컨트롤 UI 생성
+      const filterBar = document.createElement('div');
+      filterBar.className = 'student-events-filters';
+
+      // (1) 기록 종류 필터
+      const kindLabel = document.createElement('label');
+      kindLabel.className = 'student-filter-label';
+      kindLabel.textContent = '기록 종류: ';
+      const kindSelect = document.createElement('select');
+      kindSelect.setAttribute('aria-label', '기록 종류');
+      const kindAllOpt = document.createElement('option');
+      kindAllOpt.value = 'all';
+      kindAllOpt.textContent = '전체 (all)';
+      kindSelect.appendChild(kindAllOpt);
+      const uniqueKinds = [...new Set(sortedEvents.map(e => e.kind).filter(Boolean))];
+      for (const k of uniqueKinds) {
+        const opt = document.createElement('option');
+        opt.value = k;
+        const kText = EVENT_KIND_LABELS[k] || k;
+        opt.textContent = `${kText} (${k})`;
+        kindSelect.appendChild(opt);
+      }
+      kindLabel.appendChild(kindSelect);
+      filterBar.appendChild(kindLabel);
+
+      // (2) 업무 앱 필터
+      const appLabel = document.createElement('label');
+      appLabel.className = 'student-filter-label';
+      appLabel.textContent = '업무 앱: ';
+      const appSelect = document.createElement('select');
+      appSelect.setAttribute('aria-label', '업무 앱');
+      const appAllOpt = document.createElement('option');
+      appAllOpt.value = 'all';
+      appAllOpt.textContent = '전체 (all)';
+      appSelect.appendChild(appAllOpt);
+      const uniqueApps = [...new Set(sortedEvents.map(e => e.appId).filter(Boolean))];
+      for (const a of uniqueApps) {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        appSelect.appendChild(opt);
+      }
+      appLabel.appendChild(appSelect);
+      filterBar.appendChild(appLabel);
+
+      // (3) 접속 상태 필터
+      const accessLabel = document.createElement('label');
+      accessLabel.className = 'student-filter-label';
+      accessLabel.textContent = '접속 상태: ';
+      const accessSelect = document.createElement('select');
+      accessSelect.setAttribute('aria-label', '접속 상태');
+      const accessAllOpt = document.createElement('option');
+      accessAllOpt.value = 'all';
+      accessAllOpt.textContent = '전체 (all)';
+      accessSelect.appendChild(accessAllOpt);
+      const uniqueAccessStates = [...new Set(sortedEvents.map(e => e.state?.access).filter(Boolean))];
+      for (const acc of uniqueAccessStates) {
+        const opt = document.createElement('option');
+        opt.value = acc;
+        const accText = ACCESS_STATUS_LABELS[acc] || '확인 불가';
+        opt.textContent = `${accText} (${acc})`;
+        accessSelect.appendChild(opt);
+      }
+      accessLabel.appendChild(accessSelect);
+      filterBar.appendChild(accessLabel);
+
+      container.appendChild(filterBar);
+
+      // 건수 표시
+      const countP = document.createElement('p');
+      countP.className = 'student-events-count';
+      container.appendChild(countP);
+
+      // 6. 목록 영역 및 상세 영역 컨테이너
+      const listUl = document.createElement('ul');
+      listUl.className = 'student-events-list';
+      container.appendChild(listUl);
+
+      const detailDiv = document.createElement('div');
+      detailDiv.className = 'student-event-detail-container';
+      container.appendChild(detailDiv);
+
+      // 상세 영역 렌더링 함수
+      function renderDetailSection() {
+        detailDiv.replaceChildren();
+        if (!selectedEventId) {
+          detailDiv.removeAttribute('data-student-event-detail');
+          return;
+        }
+
+        const ev = sortedEvents.find(e => e.id === selectedEventId);
+        if (!ev) {
+          detailDiv.removeAttribute('data-student-event-detail');
+          return;
+        }
+
+        detailDiv.setAttribute('data-student-event-detail', ev.id);
+
+        const detailHeader = document.createElement('h3');
+        detailHeader.textContent = `기록 상세: ${ev.id}`;
+        detailDiv.appendChild(detailHeader);
+
+        // 사건 ID 및 앱 ID
+        const idAppP = document.createElement('p');
+        const appText = ev.appId || '앱을 확인할 수 없음';
+        idAppP.textContent = `사건 ID: ${ev.id} · 업무 앱: ${appText}`;
+        detailDiv.appendChild(idAppP);
+
+        // state (access, session, device)
+        const stateWrap = document.createElement('div');
+        stateWrap.className = 'student-detail-state';
+        const stateTitle = document.createElement('strong');
+        stateTitle.textContent = '상태 정보:';
+        stateWrap.appendChild(stateTitle);
+
+        const accRaw = ev.state?.access || 'unknown';
+        const accText = ACCESS_STATUS_LABELS[accRaw] || '확인 불가';
+        const sessRaw = ev.state?.session || 'unknown';
+        const sessText = SESSION_STATUS_LABELS[sessRaw] || '확인 불가';
+        const devRaw = ev.state?.device || 'unknown';
+        const devText = DEVICE_STATUS_LABELS[devRaw] || '확인 불가';
+
+        const stateUl = document.createElement('ul');
+        const liAcc = document.createElement('li');
+        liAcc.textContent = `접속 상태: ${accText} (${accRaw})`;
+        stateUl.appendChild(liAcc);
+
+        const liSess = document.createElement('li');
+        liSess.textContent = `세션 상태: ${sessText} (${sessRaw})`;
+        stateUl.appendChild(liSess);
+
+        const liDev = document.createElement('li');
+        liDev.textContent = `기기 상태: ${devText} (${devRaw})`;
+        stateUl.appendChild(liDev);
+
+        stateWrap.appendChild(stateUl);
+        detailDiv.appendChild(stateWrap);
+
+        // 근거 (evidence)
+        const evidenceWrap = document.createElement('div');
+        evidenceWrap.className = 'student-detail-evidence';
+        const evTitle = document.createElement('strong');
+        evTitle.textContent = '근거 (Evidence):';
+        evidenceWrap.appendChild(evTitle);
+        const evidenceList = Array.isArray(ev.evidence) ? ev.evidence : [];
+        if (evidenceList.length === 0) {
+          const noEvP = document.createElement('p');
+          noEvP.textContent = '등록된 근거가 없습니다.';
+          evidenceWrap.appendChild(noEvP);
+        } else {
+          const evUl = document.createElement('ul');
+          for (const item of evidenceList) {
+            const li = document.createElement('li');
+            li.textContent = `[${item.id || '근거'}] ${item.text || ''}`;
+            evUl.appendChild(li);
+          }
+          evidenceWrap.appendChild(evUl);
+        }
+        detailDiv.appendChild(evidenceWrap);
+
+        // 규칙 (rules)
+        const rulesWrap = document.createElement('div');
+        rulesWrap.className = 'student-detail-rules';
+        const rulesTitle = document.createElement('strong');
+        rulesTitle.textContent = '적용 규칙 (Rules):';
+        rulesWrap.appendChild(rulesTitle);
+        const rulesList = Array.isArray(ev.rules) ? ev.rules : [];
+        if (rulesList.length === 0) {
+          const noRulesP = document.createElement('p');
+          noRulesP.textContent = '등록된 규칙이 없습니다.';
+          rulesWrap.appendChild(noRulesP);
+        } else {
+          const rUl = document.createElement('ul');
+          for (const r of rulesList) {
+            const li = document.createElement('li');
+            li.textContent = `[${r.id || '규칙'}] ${r.text || ''}`;
+            rUl.appendChild(li);
+          }
+          rulesWrap.appendChild(rUl);
+        }
+        detailDiv.appendChild(rulesWrap);
+      }
+
+      // 목록 갱신 함수
+      function updateList() {
+        const filtered = sortedEvents.filter(ev => {
+          if (currentKindFilter !== 'all' && ev.kind !== currentKindFilter) return false;
+          if (currentAppFilter !== 'all' && (ev.appId || '') !== currentAppFilter) return false;
+          if (currentAccessFilter !== 'all' && (ev.state?.access || 'unknown') !== currentAccessFilter) return false;
+          return true;
+        });
+
+        countP.textContent = `조회 건수: ${filtered.length}건 (전체 ${sortedEvents.length}건)`;
+        listUl.replaceChildren();
+
+        if (filtered.length === 0) {
+          const emptyLi = document.createElement('li');
+          emptyLi.className = 'student-events-empty';
+          emptyLi.textContent = '조건에 맞는 기록이 없습니다.';
+          listUl.appendChild(emptyLi);
+          return;
+        }
+
+        for (const ev of filtered) {
+          const li = document.createElement('li');
+          li.className = 'student-event-item';
+          li.setAttribute('data-student-event-id', ev.id);
+
+          // 종류 한국어 변환
+          const kindText = EVENT_KIND_LABELS[ev.kind] || ev.kind;
+          const appText = ev.appId || '앱을 확인할 수 없음';
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'student-event-text';
+          textSpan.textContent = `[${ev.id}] ${ev.at || ''} · ${kindText} (${ev.kind}) · 앱: ${appText} · 요약: ${ev.summary || '요약 없음'}`;
+          li.appendChild(textSpan);
+
+          // 상세 보기 버튼
+          const detailBtn = document.createElement('button');
+          detailBtn.type = 'button';
+          detailBtn.className = 'student-detail-btn btn';
+          detailBtn.textContent = `${ev.id} 상세`;
+          detailBtn.setAttribute('aria-label', `${ev.id} 상세`);
+          detailBtn.onclick = () => {
+            selectedEventId = (selectedEventId === ev.id) ? null : ev.id;
+            renderDetailSection();
+          };
+          li.appendChild(detailBtn);
+
+          listUl.appendChild(li);
+        }
+      }
+
+      // 필터 이벤트 바인딩
+      kindSelect.onchange = (e) => {
+        currentKindFilter = e.target.value;
+        updateList();
+      };
+      appSelect.onchange = (e) => {
+        currentAppFilter = e.target.value;
+        updateList();
+      };
+      accessSelect.onchange = (e) => {
+        currentAccessFilter = e.target.value;
+        updateList();
+      };
+
+      // 최초 렌더링
+      updateList();
+      renderDetailSection();
+
+      return container;
+    },
     renderStatus() { return '학생 구현 대기: 기기·세션·알림과 연결 점검 상태를 구분하세요.'; },
     renderVulnerabilities() { return '학생 구현 대기: 정확한 설치 버전·OSV 출처·조회 시각·부분 결과·조회 실패를 구분하세요.'; },
     renderAiConnection() { return '학생 구현 대기: 모델 응답 점검과 실제 사건 설명을 구분하고 AI 오류·취소·수동 복구를 안내하세요.'; },
