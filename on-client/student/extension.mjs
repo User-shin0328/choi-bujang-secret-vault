@@ -381,12 +381,40 @@ export function createStudentView() {
       return container;
     },
 
-    // [AI 모델 호출 계약 검토 참고 (ai_model_called 연계 흐름)]
+    // ============================================================================
+    // [검토 원문: ai_model_called 심판 검토 자료]
     // 1. 요청: on-client/public/app.js의 requestAiExplanation -> POST /api/ai/explain { eventId }
-    // 2. 서버 라우팅: on-client/src/server.mjs의 POST /api/ai/explain -> mappedService().explainIncident(...)
-    // 3. 서비스: on-client/src/ai/service.mjs의 createOnAiService -> clcoClient.request('/v1/chat/completions', ...)
-    // 4. 전송기: on-client/vendor/clco-http.mjs의 createClcoClient -> loopback/HTTPS 모델 엔드포인트 실제 HTTP 전송
-    // 5. 표시: on-client/student/extension.mjs의 renderExplanation -> ok 응답 시 요약 표시 및 data-student-explanation-event 부착
+    // 2. 서버 라우팅 원문 (on-client/src/server.mjs L527-L545):
+    //    if(req.method==='POST'&&url.pathname==='/api/ai/explain'){
+    //      const {eventId}=await bounded(()=>jsonBody(req,['eventId']));
+    //      const identity=assertData('identity',await call('readIdentity'));
+    //      const expectedScope=Object.freeze({subjectId:identity.user.id,projectId:engine.projectId,appId:'aleph-on',audience:'on-client'});
+    //      const rawEvents=await call('readEvents',expectedScope);
+    //      const events=assertData('events',rawEvents);const event=events.find(row=>row.id===eventId);
+    //      if(!event)throw engineError('EVENT_NOT_FOUND','사건 기록을 찾을 수 없습니다.',404);
+    //      const source=Object.freeze({sourceSubjectId:identity.user.id,projectId:expectedScope.projectId,sessionId:identity.session.id});
+    //      const binding=await readMapping(source);
+    //      const output=await bounded(()=>mappedService().explainIncident({incidentId:event.id,evidence:event.evidence.map(e=>({id:e.id,summary:e.text})),rules:event.rules.map(r=>({id:r.id,description:r.text})),currentState:event.state,supportedActions:event.supportedActions},authOptions(binding)));
+    //      await finishMapping(source,binding);
+    //      if(!output?.ok){send(503,{ok:false,error:aiFailure(output)});return;}
+    //      send(200,{ok:true,data:{explanation:assertExplanation(output.explanation,event,aiSecrets)}});return;
+    //    }
+    // 3. 서비스 원문 (on-client/src/ai/service.mjs):
+    //    explainIncident -> client.request('/chat', { ... })
+    // 4. HTTP 전송기 원문 (on-client/vendor/clco-http.mjs L56-L96):
+    //    async function request(endpoint, body, { signal } = {}) {
+    //      const response = await fetch(base.href.replace(/\/$/, '') + endpoint, {
+    //        method: body ? 'POST' : 'GET',
+    //        headers: { authorization: `Bearer ${authAppToken}`, accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
+    //        body: body ? JSON.stringify(body) : undefined,
+    //        signal: controller.signal
+    //      });
+    //      const bytes = []; for await (const chunk of boundedBytes()) bytes.push(chunk);
+    //      const payload = JSON.parse(new TextDecoder('utf-8').decode(Buffer.concat(bytes)));
+    //      if (!response.ok || payload?.error) throw serverFailure(response.status, payload);
+    //      return payload;
+    //    }
+    // ============================================================================
     renderExplanation({ event, explanation, checkedAt } = {}) {
       const container = el('div', 'student-explanation-view', null, { 'data-student-section': 'explanation' });
       const expResource = explanation || {}, status = expResource.status || 'idle';
