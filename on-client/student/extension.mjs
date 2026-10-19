@@ -50,6 +50,34 @@ const EVENT_KIND_LABELS = {
   xdr: 'XDR 경보',
 };
 
+function getAiErrorGuidance(code, message) {
+  const c = String(code || '').toUpperCase();
+  const m = String(message || '').toLowerCase();
+
+  if (c.includes('CANCEL') || m.includes('취소')) {
+    return '점검이 취소되었습니다. 이전 결과는 현재 결과가 아닙니다.';
+  }
+  if (c.includes('PROVISION') || c.includes('PENDING') || m.includes('권한 준비') || m.includes('확인 불가')) {
+    return '권한 준비 중이거나 확인할 수 없습니다. 담당자에게 계정 연결과 앱 권한 확인을 요청하세요.';
+  }
+  if (c.includes('AUTH') || c.includes('FORBIDDEN') || c.includes('DENIED') || m.includes('인증') || m.includes('접근 제한')) {
+    return '인증 실패 또는 접근 제한입니다. 계정 연결을 다시 확인하고 담당자에게 문의하세요.';
+  }
+  if ((c.includes('QUOTA') || c.includes('USAGE') || c.includes('LIMIT')) && !c.includes('RATE') || m.includes('사용량') || m.includes('한도')) {
+    return '반 사용량 또는 이용 한도가 초과되었습니다. 담당자에게 확인을 요청하세요.';
+  }
+  if (c.includes('HOUR') || c.includes('SCHEDULE') || m.includes('이용 시간')) {
+    return 'AI 서비스 이용 가능 시간이 아닙니다. 이용 시간을 확인하세요.';
+  }
+  if (c.includes('RATE') || c.includes('TIMEOUT') || c.includes('NETWORK') || m.includes('시간 초과') || m.includes('네트워크') || m.includes('요청 제한')) {
+    return '요청 제한, 시간 초과 또는 네트워크 오류입니다. 잠시 뒤 직접 다시 점검하세요.';
+  }
+  if (c.includes('MODEL') || m.includes('모델 없음') || m.includes('사용할 수 있는 모델')) {
+    return '사용할 수 있는 AI 모델이 없습니다. 담당자에게 모델 허용 설정을 확인 요청하세요.';
+  }
+  return '담당자에게 계정 연결과 앱 권한 확인을 요청하세요.';
+}
+
 export function createStudentView() {
   return {
     renderIdentity({ me, devices, sessions } = {}) {
@@ -820,8 +848,167 @@ export function createStudentView() {
       return container;
     },
     renderVulnerabilities() { return '학생 구현 대기: 정확한 설치 버전·OSV 출처·조회 시각·부분 결과·조회 실패를 구분하세요.'; },
-    renderAiConnection() { return '학생 구현 대기: 모델 응답 점검과 실제 사건 설명을 구분하고 AI 오류·취소·수동 복구를 안내하세요.'; },
-    renderExplanation() { return '학생 구현 대기: 선택한 사건의 근거·규칙·현재 상태와 AI 설명을 연결하세요. 제안은 자동 실행하지 않습니다.'; },
+    renderAiConnection({ status, mode, data, error, checkedAt, explanationAccepted } = {}) {
+      const container = document.createElement('div');
+      container.className = 'student-ai-connection-view';
+      container.setAttribute('data-student-section', 'ai-connection');
+
+      // 1. 모드 안내 (모든 상태에서 mode 표시)
+      const currentMode = mode || 'unknown';
+      const modeText = MODE_LABELS[currentMode] || '확인 불가';
+      const modeEl = document.createElement('div');
+      modeEl.className = 'student-mode-badge';
+      modeEl.textContent = `모드: ${modeText}`;
+      container.appendChild(modeEl);
+
+      // 2. idle: 아직 점검 전 상태
+      if (!status || status === 'idle') {
+        const idleP = document.createElement('p');
+        idleP.className = 'status-empty';
+        idleP.textContent = 'AI 연결 점검 전입니다. 설정값 존재는 이용 권한 확인이 아닙니다.';
+        container.appendChild(idleP);
+        return container;
+      }
+
+      // 3. loading: 점검 중 상태
+      if (status === 'loading') {
+        const loadP = document.createElement('p');
+        loadP.className = 'status-loading';
+        loadP.textContent = 'AI 연결 점검 중… 현재 로그인으로 모델 응답을 확인하고 있습니다.';
+        container.appendChild(loadP);
+        return container;
+      }
+
+      // 4. error: 실패 상태
+      if (status === 'error') {
+        const errWrap = document.createElement('div');
+        errWrap.className = 'status-alert';
+        errWrap.setAttribute('data-student-status', 'error');
+
+        const safeCode = error && error.code ? error.code : 'UNVERIFIED';
+        const safeMsg = error && error.message ? error.message : '확인 불가';
+
+        const errP = document.createElement('p');
+        errP.textContent = `연결 점검 실패: [${safeCode}] ${safeMsg}`;
+        errWrap.appendChild(errP);
+
+        // 코드별 원인 상세 안내
+        const causeNotice = document.createElement('p');
+        causeNotice.className = 'status-cause';
+        causeNotice.textContent = getAiErrorGuidance(safeCode, safeMsg);
+        errWrap.appendChild(causeNotice);
+
+        // 수동 재점검 안내
+        const retryNotice = document.createElement('p');
+        retryNotice.className = 'status-note';
+        retryNotice.textContent = '다시 점검은 제공 화면의 점검 버튼을 직접 누르세요. (자동으로 다시 점검하지 않습니다)';
+        errWrap.appendChild(retryNotice);
+
+        container.appendChild(errWrap);
+        return container;
+      }
+
+      // 5. ok: 점검 완료 상태
+      const auth = data?.audienceAuthorization;
+      const authText = auth === 'test'
+        ? '시험 연결 점검(test)'
+        : (auth === 'verified' ? '앱 권한 확인 후 점검(verified)' : `${auth || '확인 불가'}(${auth || 'unknown'})`);
+
+      const authP = document.createElement('p');
+      authP.className = 'student-ai-auth';
+      authP.textContent = `권한 확인 상태: ${authText}`;
+      container.appendChild(authP);
+
+      const countP = document.createElement('p');
+      countP.className = 'student-ai-models';
+      countP.textContent = `응답 모델 수: ${data?.modelCount ?? 0}개`;
+      container.appendChild(countP);
+
+      const timeP = document.createElement('p');
+      timeP.className = 'student-ai-time';
+      timeP.textContent = `점검 시각: ${checkedAt || '확인 불가'}`;
+      container.appendChild(timeP);
+
+      // 사건 설명 미실행 명시 (중요: 모델 목록 응답을 사건 설명으로 혼동하지 않게 함)
+      const notRunP = document.createElement('p');
+      notRunP.className = 'status-note';
+      notRunP.textContent = '사건 설명은 아직 실행하지 않았습니다. (연결 상태만 점검되었으며 실제 사건 설명은 보안 기록에서 별도로 실행됩니다)';
+      container.appendChild(notRunP);
+
+      return container;
+    },
+    renderExplanation({ event, explanation, checkedAt } = {}) {
+      const container = document.createElement('div');
+      container.className = 'student-explanation-view';
+      container.setAttribute('data-student-section', 'explanation');
+
+      const expResource = explanation || {};
+      const status = expResource.status || 'idle';
+
+      // 1. idle: 요청 전 상태
+      if (status === 'idle') {
+        const idleP = document.createElement('p');
+        idleP.className = 'status-empty';
+        idleP.textContent = '사건을 선택하고 AI 설명을 요청하세요.';
+        container.appendChild(idleP);
+        return container;
+      }
+
+      // 2. loading: 생성 중 상태
+      if (status === 'loading') {
+        const loadP = document.createElement('p');
+        loadP.className = 'status-loading';
+        loadP.textContent = '사건 설명을 생성하는 중…';
+        container.appendChild(loadP);
+        return container;
+      }
+
+      // 3. error: 실패 상태 (data-student-explanation-event 속성 제외)
+      if (status === 'error') {
+        const errWrap = document.createElement('div');
+        errWrap.className = 'status-alert';
+        errWrap.setAttribute('data-student-status', 'error');
+
+        const safeCode = expResource.error?.code || 'ERROR';
+        const safeMsg = expResource.error?.message || '확인 불가';
+
+        const errP = document.createElement('p');
+        errP.textContent = `설명 생성 실패: [${safeCode}] ${safeMsg}`;
+        errWrap.appendChild(errP);
+
+        const noticeP = document.createElement('p');
+        noticeP.className = 'status-note';
+        noticeP.textContent = '사건 기록은 그대로 유지됩니다. (실패는 기록을 변경하지 않습니다)';
+        errWrap.appendChild(noticeP);
+
+        container.appendChild(errWrap);
+        return container;
+      }
+
+      // 4. ok: 성공 상태
+      if (event && event.id) {
+        container.setAttribute('data-student-explanation-event', event.id);
+      }
+
+      const eventIdP = document.createElement('p');
+      eventIdP.className = 'student-explanation-event-id';
+      eventIdP.textContent = `사건 ID: ${event?.id || '알 수 없음'}`;
+      container.appendChild(eventIdP);
+
+      const summaryP = document.createElement('p');
+      summaryP.className = 'student-explanation-summary';
+      summaryP.textContent = `설명 요약: ${expResource.data?.summary || '요약 없음'}`;
+      container.appendChild(summaryP);
+
+      if (checkedAt) {
+        const timeP = document.createElement('p');
+        timeP.className = 'student-explanation-time';
+        timeP.textContent = `확인 시각: ${checkedAt}`;
+        container.appendChild(timeP);
+      }
+
+      return container;
+    },
     renderAction() { return '학생 구현 대기: 현재 사건·조치·실제 대상·사람 확인·ACK와 원천 효과·unknown을 구분하세요.'; },
   };
 }
