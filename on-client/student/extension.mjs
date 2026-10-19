@@ -1,544 +1,213 @@
 // 이 파일은 학생이 같은 프로젝트에서 이어서 구현합니다.
 // 제공 UI를 받은 것만으로 단계 완료를 인정하지 않습니다.
-const DEVICE_STATUS_LABELS = {
-  compliant: '보안 기준 충족',
-  noncompliant: '보안 기준 미충족',
-  unknown: '확인 불가',
-};
-
-const SESSION_STATUS_LABELS = {
-  active: '활성',
-  expired: '만료',
-  revoked: '철회됨',
-  unknown: '확인 불가',
-};
-
-const MODE_LABELS = {
-  demo: '예제 자료',
-  disconnected: '연결 없음',
-  connected: '연결됨',
-  unknown: '확인 불가',
-};
-
+const DEVICE_STATUS_LABELS = { compliant: '보안 기준 충족', noncompliant: '보안 기준 미충족', unknown: '확인 불가' };
+const SESSION_STATUS_LABELS = { active: '활성', expired: '만료', revoked: '철회됨', unknown: '확인 불가' };
+const MODE_LABELS = { demo: '예제 자료', disconnected: '연결 없음', connected: '연결됨', unknown: '확인 불가' };
 const DECISION_LABELS = {
-  allow: {
-    label: '접근 허용',
-    note: '정책상 접근이 허용되었습니다. (실제 앱 접속 성공을 보장하지는 않습니다)',
-  },
-  deny: {
-    label: '접근 거부',
-    note: '정책상 접근이 거부되었습니다.',
-  },
-  challenge: {
-    label: '추가 인증 또는 확인 필요',
-    note: '추가 확인이 필요하며, 앱이 확인 절차를 대신하지 않습니다.',
-  },
-  unknown: {
-    label: '판정 확인 불가',
-    note: '판정을 확인할 수 없으며 정상 또는 접근이 허용되지 않았습니다.',
-  },
+  allow: { label: '접근 허용', note: '정책상 접근이 허용되었습니다. (실제 앱 접속 성공을 보장하지는 않습니다)' },
+  deny: { label: '접근 거부', note: '정책상 접근이 거부되었습니다.' },
+  challenge: { label: '추가 인증 또는 확인 필요', note: '추가 확인이 필요하며, 앱이 확인 절차를 대신하지 않습니다.' },
+  unknown: { label: '판정 확인 불가', note: '판정을 확인할 수 없으며 정상 또는 접근이 허용되지 않았습니다.' }
 };
-
-const ACCESS_STATUS_LABELS = {
-  allowed: '접근 허용',
-  denied: '접근 거부',
-  unknown: '확인 불가',
-};
-
-const EVENT_KIND_LABELS = {
-  access: '접속',
-  xdr: 'XDR 경보',
-};
+const ACCESS_STATUS_LABELS = { allowed: '접근 허용', denied: '접근 거부', unknown: '확인 불가' };
+const EVENT_KIND_LABELS = { access: '접속', xdr: 'XDR 경보' };
 
 function getAiErrorGuidance(code, message) {
-  const c = String(code || '').toUpperCase();
-  const m = String(message || '').toLowerCase();
-
-  if (c.includes('CANCEL') || m.includes('취소')) {
-    return '점검이 취소되었습니다. 이전 결과는 현재 결과가 아닙니다.';
-  }
-  if (c.includes('PROVISION') || c.includes('PENDING') || m.includes('권한 준비') || m.includes('확인 불가')) {
-    return '권한 준비 중이거나 확인할 수 없습니다. 담당자에게 계정 연결과 앱 권한 확인을 요청하세요.';
-  }
-  if (c.includes('AUTH') || c.includes('FORBIDDEN') || c.includes('DENIED') || m.includes('인증') || m.includes('접근 제한')) {
-    return '인증 실패 또는 접근 제한입니다. 계정 연결을 다시 확인하고 담당자에게 문의하세요.';
-  }
-  if ((c.includes('QUOTA') || c.includes('USAGE') || c.includes('LIMIT')) && !c.includes('RATE') || m.includes('사용량') || m.includes('한도')) {
-    return '반 사용량 또는 이용 한도가 초과되었습니다. 담당자에게 확인을 요청하세요.';
-  }
-  if (c.includes('HOUR') || c.includes('SCHEDULE') || m.includes('이용 시간')) {
-    return 'AI 서비스 이용 가능 시간이 아닙니다. 이용 시간을 확인하세요.';
-  }
-  if (c.includes('RATE') || c.includes('TIMEOUT') || c.includes('NETWORK') || m.includes('시간 초과') || m.includes('네트워크') || m.includes('요청 제한')) {
-    return '요청 제한, 시간 초과 또는 네트워크 오류입니다. 잠시 뒤 직접 다시 점검하세요.';
-  }
-  if (c.includes('MODEL') || m.includes('모델 없음') || m.includes('사용할 수 있는 모델')) {
-    return '사용할 수 있는 AI 모델이 없습니다. 담당자에게 모델 허용 설정을 확인 요청하세요.';
-  }
+  const c = String(code || '').toUpperCase(), m = String(message || '').toLowerCase();
+  if (c.includes('CANCEL') || m.includes('취소')) return '점검이 취소되었습니다. 이전 결과는 현재 결과가 아닙니다.';
+  if (c.includes('PROVISION') || c.includes('PENDING') || m.includes('권한 준비') || m.includes('확인 불가')) return '권한 준비 중이거나 확인할 수 없습니다. 담당자에게 계정 연결과 앱 권한 확인을 요청하세요.';
+  if (c.includes('AUTH') || c.includes('FORBIDDEN') || c.includes('DENIED') || m.includes('인증') || m.includes('접근 제한')) return '인증 실패 또는 접근 제한입니다. 계정 연결을 다시 확인하고 담당자에게 문의하세요.';
+  if ((c.includes('QUOTA') || c.includes('USAGE') || c.includes('LIMIT')) && !c.includes('RATE') || m.includes('사용량') || m.includes('한도')) return '반 사용량 또는 이용 한도가 초과되었습니다. 담당자에게 확인을 요청하세요.';
+  if (c.includes('HOUR') || c.includes('SCHEDULE') || m.includes('이용 시간')) return 'AI 서비스 이용 가능 시간이 아닙니다. 이용 시간을 확인하세요.';
+  if (c.includes('RATE') || c.includes('TIMEOUT') || c.includes('NETWORK') || m.includes('시간 초과') || m.includes('네트워크') || m.includes('요청 제한')) return '요청 제한, 시간 초과 또는 네트워크 오류입니다. 잠시 뒤 직접 다시 점검하세요.';
+  if (c.includes('MODEL') || m.includes('모델 없음') || m.includes('사용할 수 있는 모델')) return '사용할 수 있는 AI 모델이 없습니다. 담당자에게 모델 허용 설정을 확인 요청하세요.';
   return '담당자에게 계정 연결과 앱 권한 확인을 요청하세요.';
 }
+
+const el = (tag, cls, text, attrs) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined && text !== null) node.textContent = text;
+  if (attrs) for (const k of Object.keys(attrs)) node.setAttribute(k, attrs[k]);
+  return node;
+};
 
 export function createStudentView() {
   return {
     renderIdentity({ me, devices, sessions } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-identity-view';
-      container.setAttribute('data-student-section', 'identity');
+      const container = el('div', 'student-identity-view', null, { 'data-student-section': 'identity' });
+      const currentMode = (me?.mode) || (devices?.mode) || (sessions?.mode) || 'unknown';
+      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[currentMode] || '확인 불가'}`));
 
-      // 1. 모드 안내 (loading, error, ok 모든 상태에서 전달받은 mode 표시)
-      const currentMode = (me && me.mode) || (devices && devices.mode) || (sessions && sessions.mode) || 'unknown';
-      const modeText = MODE_LABELS[currentMode] || '확인 불가';
-      const modeEl = document.createElement('div');
-      modeEl.className = 'student-mode-badge';
-      modeEl.textContent = `모드: ${modeText}`;
-      container.appendChild(modeEl);
-
-      // 2. loading 상태 처리
       if (!me || me.status === 'loading') {
-        const loadingEl = document.createElement('p');
-        loadingEl.className = 'student-status-loading';
-        loadingEl.textContent = '불러오는 중';
-        container.appendChild(loadingEl);
+        container.appendChild(el('p', 'student-status-loading', '불러오는 중'));
         return container;
       }
-
-      // 3. error 상태 처리 (이전 사용자 정보가 남지 않도록 에러 메시지만 포함)
       if (me.status === 'error') {
-        const errorEl = document.createElement('p');
-        errorEl.className = 'student-status-error';
-        const msg = me.error && me.error.message ? me.error.message : '확인 불가';
-        errorEl.textContent = `연결 실패: ${msg}`;
-        container.appendChild(errorEl);
+        container.appendChild(el('p', 'student-status-error', `연결 실패: ${me.error?.message || '확인 불가'}`));
         return container;
       }
 
-      // 4. ok 상태 처리: me.data 읽기
-      const userData = (me.data && me.data.user) || {};
-      const deviceData = (me.data && me.data.device) || {};
-      const sessionData = (me.data && me.data.session) || {};
-
-      // 사용자 정보 (label 및 id)
-      const userP = document.createElement('p');
-      userP.className = 'student-identity-user';
-      userP.setAttribute('data-student-field', 'user');
+      const userData = me.data?.user || {}, deviceData = me.data?.device || {}, sessionData = me.data?.session || {};
       const userLabel = userData.label || userData.id || '확인 불가';
-      userP.textContent = userData.id && userData.label
-        ? `사용자: ${userData.label} (${userData.id})`
-        : `사용자: ${userLabel}`;
-      container.appendChild(userP);
+      container.appendChild(el('p', 'student-identity-user', userData.id && userData.label ? `사용자: ${userData.label} (${userData.id})` : `사용자: ${userLabel}`, { 'data-student-field': 'user' }));
 
-      // 기기 정보 (label, id, status: compliant/noncompliant/unknown)
-      const deviceP = document.createElement('p');
-      deviceP.className = 'student-identity-device';
-      deviceP.setAttribute('data-student-field', 'device');
-      const devStatusRaw = deviceData.status || 'unknown';
-      const devStatusText = DEVICE_STATUS_LABELS[devStatusRaw] || '확인 불가';
-      const devLabel = deviceData.label || deviceData.id || '확인 불가';
-      const devIdPart = deviceData.id && deviceData.label ? ` (${deviceData.id})` : '';
-      deviceP.textContent = `기기: ${devLabel}${devIdPart} · 상태: ${devStatusText} (${devStatusRaw})`;
-      if (devStatusRaw === 'noncompliant') {
-        deviceP.className = 'student-identity-device status-warning';
-        deviceP.setAttribute('data-student-status', 'noncompliant');
-      }
-      container.appendChild(deviceP);
+      const devStatusRaw = deviceData.status || 'unknown', devStatusText = DEVICE_STATUS_LABELS[devStatusRaw] || '확인 불가';
+      const devLabel = deviceData.label || deviceData.id || '확인 불가', devIdPart = deviceData.id && deviceData.label ? ` (${deviceData.id})` : '';
+      const devAttrs = { 'data-student-field': 'device' };
+      if (devStatusRaw === 'noncompliant') devAttrs['data-student-status'] = 'noncompliant';
+      container.appendChild(el('p', devStatusRaw === 'noncompliant' ? 'student-identity-device status-warning' : 'student-identity-device', `기기: ${devLabel}${devIdPart} · 상태: ${devStatusText} (${devStatusRaw})`, devAttrs));
 
-      // 세션 정보 (id, status: active/expired/revoked/unknown)
-      const sessionP = document.createElement('p');
-      sessionP.className = 'student-identity-session';
-      sessionP.setAttribute('data-student-field', 'session');
-      const sessStatusRaw = sessionData.status || 'unknown';
-      const sessStatusText = SESSION_STATUS_LABELS[sessStatusRaw] || '확인 불가';
-      const sessId = sessionData.id || '확인 불가';
-      sessionP.textContent = `세션: ${sessId} · 상태: ${sessStatusText} (${sessStatusRaw})`;
-      if (sessStatusRaw === 'expired' || sessStatusRaw === 'revoked') {
-        sessionP.className = 'student-identity-session status-alert';
-        sessionP.setAttribute('data-student-status', sessStatusRaw);
-      }
-      container.appendChild(sessionP);
+      const sessStatusRaw = sessionData.status || 'unknown', sessStatusText = SESSION_STATUS_LABELS[sessStatusRaw] || '확인 불가';
+      const sessAttrs = { 'data-student-field': 'session' };
+      if (sessStatusRaw === 'expired' || sessStatusRaw === 'revoked') sessAttrs['data-student-status'] = sessStatusRaw;
+      container.appendChild(el('p', (sessStatusRaw === 'expired' || sessStatusRaw === 'revoked') ? 'student-identity-session status-alert' : 'student-identity-session', `세션: ${sessionData.id || '확인 불가'} · 상태: ${sessStatusText} (${sessStatusRaw})`, sessAttrs));
 
-      // 5. devices / sessions 보조 상태 처리
-      if (devices && devices.status === 'error') {
-        const devErr = document.createElement('p');
-        devErr.className = 'student-status-error';
-        devErr.textContent = `기기 목록 연결 실패: ${devices.error && devices.error.message ? devices.error.message : '확인 불가'}`;
-        container.appendChild(devErr);
-      }
-
-      if (sessions && sessions.status === 'error') {
-        const sessErr = document.createElement('p');
-        sessErr.className = 'student-status-error';
-        sessErr.textContent = `세션 목록 연결 실패: ${sessions.error && sessions.error.message ? sessions.error.message : '확인 불가'}`;
-        container.appendChild(sessErr);
-      }
-
+      if (devices?.status === 'error') container.appendChild(el('p', 'student-status-error', `기기 목록 연결 실패: ${devices.error?.message || '확인 불가'}`));
+      if (sessions?.status === 'error') container.appendChild(el('p', 'student-status-error', `세션 목록 연결 실패: ${sessions.error?.message || '확인 불가'}`));
       return container;
     },
+
     renderDecision({ status, mode, data, error, appId } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-decision-view';
-      container.setAttribute('data-student-section', 'decision');
+      const container = el('div', 'student-decision-view', null, { 'data-student-section': 'decision' });
+      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
 
-      // 1. 모드 안내 (loading, error, ok, idle 모든 상태에서 모드 표시)
-      const currentMode = mode || 'unknown';
-      const modeText = MODE_LABELS[currentMode] || '확인 불가';
-      const modeEl = document.createElement('div');
-      modeEl.className = 'student-mode-badge';
-      modeEl.textContent = `모드: ${modeText}`;
-      container.appendChild(modeEl);
-
-      // 2. idle: 요청 전 상태
       if (!status || status === 'idle') {
-        const idleEl = document.createElement('p');
-        idleEl.className = 'student-decision-idle';
-        idleEl.textContent = '앱을 골라 접속을 요청하세요.';
-        container.appendChild(idleEl);
+        container.appendChild(el('p', 'student-decision-idle', '앱을 골라 접속을 요청하세요.'));
         return container;
       }
-
-      // 3. loading: 판정 확인 중 상태
       if (status === 'loading') {
-        const loadingEl = document.createElement('p');
-        loadingEl.className = 'student-decision-loading';
-        loadingEl.textContent = appId ? `${appId} 판정 확인 중…` : '판정 확인 중…';
-        container.appendChild(loadingEl);
+        container.appendChild(el('p', 'student-decision-loading', appId ? `${appId} 판정 확인 중…` : '판정 확인 중…'));
         return container;
       }
-
-      // 4. error: 요청 실패 상태 (거부 판정과 구분 및 허용으로 읽히지 않게 처리)
       if (status === 'error') {
-        const errorWrap = document.createElement('div');
-        errorWrap.className = 'student-decision-error status-alert';
-        errorWrap.setAttribute('data-student-status', 'error');
-
-        const errP = document.createElement('p');
-        const msg = error && error.message ? error.message : '확인 불가';
-        errP.textContent = `요청 실패: ${msg}`;
-        errorWrap.appendChild(errP);
-
-        const noticeP = document.createElement('p');
-        noticeP.className = 'status-note';
-        noticeP.textContent = '요청 실패는 거부 판정이 아니며, 정상 또는 접근이 허용되지 않았습니다.';
-        errorWrap.appendChild(noticeP);
-
+        const errorWrap = el('div', 'student-decision-error status-alert', null, { 'data-student-status': 'error' });
+        errorWrap.appendChild(el('p', null, `요청 실패: ${error?.message || '확인 불가'}`));
+        errorWrap.appendChild(el('p', 'status-note', '요청 실패는 거부 판정이 아니며, 정상 또는 접근이 허용되지 않았습니다.'));
         container.appendChild(errorWrap);
         return container;
       }
 
-      // 5. ok: 판정 수신 상태
-      const decisionData = data || {};
-      const targetAppId = decisionData.appId || appId || '알 수 없음';
-      const rawDecision = decisionData.decision;
-      const isKnown = ['allow', 'deny', 'challenge', 'unknown'].includes(rawDecision);
-      const effectiveDecision = isKnown ? rawDecision : 'unknown';
+      const decisionData = data || {}, rawDecision = decisionData.decision;
+      const effectiveDecision = ['allow', 'deny', 'challenge', 'unknown'].includes(rawDecision) ? rawDecision : 'unknown';
       const decisionInfo = DECISION_LABELS[effectiveDecision];
 
-      // 대상 앱 표시
-      const appP = document.createElement('p');
-      appP.className = 'student-decision-app';
-      appP.setAttribute('data-student-field', 'appId');
-      appP.textContent = `업무 앱: ${targetAppId}`;
-      container.appendChild(appP);
-
-      // 판정 결과 표시 (한국어 뜻과 원래 코드값 함께 표시)
-      const decP = document.createElement('p');
-      decP.className = `student-decision-result decision-${effectiveDecision}`;
-      decP.setAttribute('data-student-decision', effectiveDecision);
-      decP.textContent = `판정: ${decisionInfo.label} (${effectiveDecision})`;
-      if (effectiveDecision === 'deny' || effectiveDecision === 'unknown') {
-        decP.className += ' status-alert';
-      } else if (effectiveDecision === 'challenge') {
-        decP.className += ' status-warning';
-      }
-      container.appendChild(decP);
-
-      // 판정 부가 설명
-      const noteP = document.createElement('p');
-      noteP.className = 'student-decision-note';
-      noteP.textContent = decisionInfo.note;
-      container.appendChild(noteP);
-
-      // 판정 이유 (reason)
-      const reasonP = document.createElement('p');
-      reasonP.className = 'student-decision-reason';
-      reasonP.setAttribute('data-student-field', 'reason');
-      reasonP.textContent = `판정 이유: ${decisionData.reason || '사유 정보 없음'}`;
-      container.appendChild(reasonP);
-
-      // 판정 시각 (checkedAt)
-      const timeP = document.createElement('p');
-      timeP.className = 'student-decision-time';
-      timeP.setAttribute('data-student-field', 'checkedAt');
-      timeP.textContent = `판정 시각: ${decisionData.checkedAt || '확인 불가'}`;
-      container.appendChild(timeP);
-
+      container.appendChild(el('p', 'student-decision-app', `업무 앱: ${decisionData.appId || appId || '알 수 없음'}`, { 'data-student-field': 'appId' }));
+      let decCls = `student-decision-result decision-${effectiveDecision}`;
+      if (effectiveDecision === 'deny' || effectiveDecision === 'unknown') decCls += ' status-alert';
+      else if (effectiveDecision === 'challenge') decCls += ' status-warning';
+      container.appendChild(el('p', decCls, `판정: ${decisionInfo.label} (${effectiveDecision})`, { 'data-student-decision': effectiveDecision }));
+      container.appendChild(el('p', 'student-decision-note', decisionInfo.note));
+      container.appendChild(el('p', 'student-decision-reason', `판정 이유: ${decisionData.reason || '사유 정보 없음'}`, { 'data-student-field': 'reason' }));
+      container.appendChild(el('p', 'student-decision-time', `판정 시각: ${decisionData.checkedAt || '확인 불가'}`, { 'data-student-field': 'checkedAt' }));
       return container;
     },
+
     renderEvents({ status, mode, data, error } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-events-view';
-      container.setAttribute('data-student-section', 'events');
+      const container = el('div', 'student-events-view', null, { 'data-student-section': 'events' });
+      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
 
-      // 1. 모드 안내 (loading, error, ok 모든 상태에서 전달받은 mode 표시)
-      const currentMode = mode || 'unknown';
-      const modeText = MODE_LABELS[currentMode] || '확인 불가';
-      const modeEl = document.createElement('div');
-      modeEl.className = 'student-mode-badge';
-      modeEl.textContent = `모드: ${modeText}`;
-      container.appendChild(modeEl);
-
-      // 2. loading 상태 처리
       if (!status || status === 'loading') {
-        const loadingEl = document.createElement('p');
-        loadingEl.className = 'student-events-loading';
-        loadingEl.textContent = '보안 기록을 불러오는 중…';
-        container.appendChild(loadingEl);
+        container.appendChild(el('p', 'student-events-loading', '보안 기록을 불러오는 중…'));
         return container;
       }
-
-      // 3. error 상태 처리 (빈 목록과 명확히 구분)
       if (status === 'error') {
-        const errorWrap = document.createElement('div');
-        errorWrap.className = 'student-events-error status-alert';
-        errorWrap.setAttribute('data-student-status', 'error');
-
-        const errP = document.createElement('p');
-        const msg = error && error.message ? error.message : '확인 불가';
-        errP.textContent = `기록을 불러오지 못했습니다: ${msg}`;
-        errorWrap.appendChild(errP);
-
-        container.appendChild(errorWrap);
+        const wrap = el('div', 'student-events-error status-alert', null, { 'data-student-status': 'error' });
+        wrap.appendChild(el('p', null, `기록을 불러오지 못했습니다: ${error?.message || '확인 불가'}`));
+        container.appendChild(wrap);
         return container;
       }
 
-      // 4. ok 상태: data가 배열인지 확인
       const eventsList = Array.isArray(data) ? data : [];
       if (eventsList.length === 0) {
-        const emptyP = document.createElement('p');
-        emptyP.className = 'student-events-empty';
-        emptyP.textContent = '표시할 기록이 없습니다.';
-        container.appendChild(emptyP);
+        container.appendChild(el('p', 'student-events-empty', '표시할 기록이 없습니다.'));
         return container;
       }
 
-      // at 기준 최신순 정렬 (원본 배열 복사)
-      const sortedEvents = [...eventsList].sort((a, b) => {
-        const timeA = a.at ? Date.parse(a.at) : 0;
-        const timeB = b.at ? Date.parse(b.at) : 0;
-        return timeB - timeA;
-      });
+      const sortedEvents = [...eventsList].sort((a, b) => (b.at ? Date.parse(b.at) : 0) - (a.at ? Date.parse(a.at) : 0));
+      let currentKindFilter = 'all', currentAppFilter = 'all', currentAccessFilter = 'all', selectedEventId = null;
 
-      // 필터 및 상세 선택 상태 (함수 스코프 내 클로저 변수)
-      let currentKindFilter = 'all';
-      let currentAppFilter = 'all';
-      let currentAccessFilter = 'all';
-      let selectedEventId = null;
+      const filterBar = el('div', 'student-events-filters');
+      const createFilter = (title, ariaLabel, values, labelMap) => {
+        const lbl = el('label', 'student-filter-label', `${title}: `);
+        const sel = el('select', null, null, { 'aria-label': ariaLabel });
+        sel.appendChild(el('option', null, '전체 (all)', { value: 'all' }));
+        for (const v of values) {
+          const optText = labelMap ? `${labelMap[v] || v} (${v})` : v;
+          sel.appendChild(el('option', null, optText, { value: v }));
+        }
+        lbl.appendChild(sel);
+        filterBar.appendChild(lbl);
+        return sel;
+      };
 
-      // 5. 필터 컨트롤 UI 생성
-      const filterBar = document.createElement('div');
-      filterBar.className = 'student-events-filters';
-
-      // (1) 기록 종류 필터
-      const kindLabel = document.createElement('label');
-      kindLabel.className = 'student-filter-label';
-      kindLabel.textContent = '기록 종류: ';
-      const kindSelect = document.createElement('select');
-      kindSelect.setAttribute('aria-label', '기록 종류');
-      const kindAllOpt = document.createElement('option');
-      kindAllOpt.value = 'all';
-      kindAllOpt.textContent = '전체 (all)';
-      kindSelect.appendChild(kindAllOpt);
-      const uniqueKinds = [...new Set(sortedEvents.map(e => e.kind).filter(Boolean))];
-      for (const k of uniqueKinds) {
-        const opt = document.createElement('option');
-        opt.value = k;
-        const kText = EVENT_KIND_LABELS[k] || k;
-        opt.textContent = `${kText} (${k})`;
-        kindSelect.appendChild(opt);
-      }
-      kindLabel.appendChild(kindSelect);
-      filterBar.appendChild(kindLabel);
-
-      // (2) 업무 앱 필터
-      const appLabel = document.createElement('label');
-      appLabel.className = 'student-filter-label';
-      appLabel.textContent = '업무 앱: ';
-      const appSelect = document.createElement('select');
-      appSelect.setAttribute('aria-label', '업무 앱');
-      const appAllOpt = document.createElement('option');
-      appAllOpt.value = 'all';
-      appAllOpt.textContent = '전체 (all)';
-      appSelect.appendChild(appAllOpt);
-      const uniqueApps = [...new Set(sortedEvents.map(e => e.appId).filter(Boolean))];
-      for (const a of uniqueApps) {
-        const opt = document.createElement('option');
-        opt.value = a;
-        opt.textContent = a;
-        appSelect.appendChild(opt);
-      }
-      appLabel.appendChild(appSelect);
-      filterBar.appendChild(appLabel);
-
-      // (3) 접속 상태 필터
-      const accessLabel = document.createElement('label');
-      accessLabel.className = 'student-filter-label';
-      accessLabel.textContent = '접속 상태: ';
-      const accessSelect = document.createElement('select');
-      accessSelect.setAttribute('aria-label', '접속 상태');
-      const accessAllOpt = document.createElement('option');
-      accessAllOpt.value = 'all';
-      accessAllOpt.textContent = '전체 (all)';
-      accessSelect.appendChild(accessAllOpt);
-      const uniqueAccessStates = [...new Set(sortedEvents.map(e => e.state?.access).filter(Boolean))];
-      for (const acc of uniqueAccessStates) {
-        const opt = document.createElement('option');
-        opt.value = acc;
-        const accText = ACCESS_STATUS_LABELS[acc] || '확인 불가';
-        opt.textContent = `${accText} (${acc})`;
-        accessSelect.appendChild(opt);
-      }
-      accessLabel.appendChild(accessSelect);
-      filterBar.appendChild(accessLabel);
-
+      const kindSelect = createFilter('기록 종류', '기록 종류', [...new Set(sortedEvents.map(e => e.kind).filter(Boolean))], EVENT_KIND_LABELS);
+      const appSelect = createFilter('업무 앱', '업무 앱', [...new Set(sortedEvents.map(e => e.appId).filter(Boolean))]);
+      const accessSelect = createFilter('접속 상태', '접속 상태', [...new Set(sortedEvents.map(e => e.state?.access).filter(Boolean))], ACCESS_STATUS_LABELS);
       container.appendChild(filterBar);
 
-      // 건수 표시
-      const countP = document.createElement('p');
-      countP.className = 'student-events-count';
+      const countP = el('p', 'student-events-count');
       container.appendChild(countP);
-
-      // 6. 목록 영역 및 상세 영역 컨테이너
-      const listUl = document.createElement('ul');
-      listUl.className = 'student-events-list';
+      const listUl = el('ul', 'student-events-list');
       container.appendChild(listUl);
-
-      const detailDiv = document.createElement('div');
-      detailDiv.className = 'student-event-detail-container';
+      const detailDiv = el('div', 'student-event-detail-container');
       container.appendChild(detailDiv);
 
-      // 상세 영역 렌더링 함수
       function renderDetailSection() {
         detailDiv.replaceChildren();
-        if (!selectedEventId) {
-          detailDiv.removeAttribute('data-student-event-detail');
-          return;
-        }
-
+        if (!selectedEventId) { detailDiv.removeAttribute('data-student-event-detail'); return; }
         const ev = sortedEvents.find(e => e.id === selectedEventId);
-        if (!ev) {
-          detailDiv.removeAttribute('data-student-event-detail');
-          return;
-        }
+        if (!ev) { detailDiv.removeAttribute('data-student-event-detail'); return; }
 
         detailDiv.setAttribute('data-student-event-detail', ev.id);
+        detailDiv.appendChild(el('h3', null, `기록 상세: ${ev.id}`));
+        detailDiv.appendChild(el('p', null, `사건 ID: ${ev.id} · 업무 앱: ${ev.appId || '앱을 확인할 수 없음'}`));
 
-        const detailHeader = document.createElement('h3');
-        detailHeader.textContent = `기록 상세: ${ev.id}`;
-        detailDiv.appendChild(detailHeader);
-
-        // 사건 ID 및 앱 ID
-        const idAppP = document.createElement('p');
-        const appText = ev.appId || '앱을 확인할 수 없음';
-        idAppP.textContent = `사건 ID: ${ev.id} · 업무 앱: ${appText}`;
-        detailDiv.appendChild(idAppP);
-
-        // state (access, session, device)
-        const stateWrap = document.createElement('div');
-        stateWrap.className = 'student-detail-state';
-        const stateTitle = document.createElement('strong');
-        stateTitle.textContent = '상태 정보:';
-        stateWrap.appendChild(stateTitle);
-
-        const accRaw = ev.state?.access || 'unknown';
-        const accText = ACCESS_STATUS_LABELS[accRaw] || '확인 불가';
-        const sessRaw = ev.state?.session || 'unknown';
-        const sessText = SESSION_STATUS_LABELS[sessRaw] || '확인 불가';
-        const devRaw = ev.state?.device || 'unknown';
-        const devText = DEVICE_STATUS_LABELS[devRaw] || '확인 불가';
-
-        const stateUl = document.createElement('ul');
-        const liAcc = document.createElement('li');
-        liAcc.textContent = `접속 상태: ${accText} (${accRaw})`;
-        stateUl.appendChild(liAcc);
-
-        const liSess = document.createElement('li');
-        liSess.textContent = `세션 상태: ${sessText} (${sessRaw})`;
-        stateUl.appendChild(liSess);
-
-        const liDev = document.createElement('li');
-        liDev.textContent = `기기 상태: ${devText} (${devRaw})`;
-        stateUl.appendChild(liDev);
-
-        stateWrap.appendChild(stateUl);
+        const stateWrap = el('div', 'student-detail-state');
+        stateWrap.appendChild(el('strong', null, '상태 정보:'));
+        const sUl = el('ul');
+        const accRaw = ev.state?.access || 'unknown', sessRaw = ev.state?.session || 'unknown', devRaw = ev.state?.device || 'unknown';
+        sUl.appendChild(el('li', null, `접속 상태: ${ACCESS_STATUS_LABELS[accRaw] || '확인 불가'} (${accRaw})`));
+        sUl.appendChild(el('li', null, `세션 상태: ${SESSION_STATUS_LABELS[sessRaw] || '확인 불가'} (${sessRaw})`));
+        sUl.appendChild(el('li', null, `기기 상태: ${DEVICE_STATUS_LABELS[devRaw] || '확인 불가'} (${devRaw})`));
+        stateWrap.appendChild(sUl);
         detailDiv.appendChild(stateWrap);
 
-        // 근거 (evidence)
-        const evidenceWrap = document.createElement('div');
-        evidenceWrap.className = 'student-detail-evidence';
-        const evTitle = document.createElement('strong');
-        evTitle.textContent = '근거 (Evidence):';
-        evidenceWrap.appendChild(evTitle);
-        const evidenceList = Array.isArray(ev.evidence) ? ev.evidence : [];
-        if (evidenceList.length === 0) {
-          const noEvP = document.createElement('p');
-          noEvP.textContent = '등록된 근거가 없습니다.';
-          evidenceWrap.appendChild(noEvP);
-        } else {
-          const evUl = document.createElement('ul');
-          for (const item of evidenceList) {
-            const li = document.createElement('li');
-            li.textContent = `[${item.id || '근거'}] ${item.text || ''}`;
-            evUl.appendChild(li);
-          }
-          evidenceWrap.appendChild(evUl);
+        const evWrap = el('div', 'student-detail-evidence');
+        evWrap.appendChild(el('strong', null, '근거 (Evidence):'));
+        const evList = Array.isArray(ev.evidence) ? ev.evidence : [];
+        if (evList.length === 0) evWrap.appendChild(el('p', null, '등록된 근거가 없습니다.'));
+        else {
+          const u = el('ul');
+          for (const item of evList) u.appendChild(el('li', null, `[${item.id || '근거'}] ${item.text || ''}`));
+          evWrap.appendChild(u);
         }
-        detailDiv.appendChild(evidenceWrap);
+        detailDiv.appendChild(evWrap);
 
-        // 규칙 (rules)
-        const rulesWrap = document.createElement('div');
-        rulesWrap.className = 'student-detail-rules';
-        const rulesTitle = document.createElement('strong');
-        rulesTitle.textContent = '적용 규칙 (Rules):';
-        rulesWrap.appendChild(rulesTitle);
-        const rulesList = Array.isArray(ev.rules) ? ev.rules : [];
-        if (rulesList.length === 0) {
-          const noRulesP = document.createElement('p');
-          noRulesP.textContent = '등록된 규칙이 없습니다.';
-          rulesWrap.appendChild(noRulesP);
-        } else {
-          const rUl = document.createElement('ul');
-          for (const r of rulesList) {
-            const li = document.createElement('li');
-            li.textContent = `[${r.id || '규칙'}] ${r.text || ''}`;
-            rUl.appendChild(li);
-          }
-          rulesWrap.appendChild(rUl);
+        const rulesWrap = el('div', 'student-detail-rules');
+        rulesWrap.appendChild(el('strong', null, '적용 규칙 (Rules):'));
+        const rList = Array.isArray(ev.rules) ? ev.rules : [];
+        if (rList.length === 0) rulesWrap.appendChild(el('p', null, '등록된 규칙이 없습니다.'));
+        else {
+          const u = el('ul');
+          for (const r of rList) u.appendChild(el('li', null, `[${r.id || '규칙'}] ${r.text || ''}`));
+          rulesWrap.appendChild(u);
         }
         detailDiv.appendChild(rulesWrap);
 
-        // 조치 (supportedActions) 미지원 안내 (16단계)
         const actionsList = Array.isArray(ev.supportedActions) ? ev.supportedActions : [];
         if (actionsList.length > 0) {
-          const actionsWrap = document.createElement('div');
-          actionsWrap.className = 'student-detail-actions';
-          const actionsNotice = document.createElement('p');
-          actionsNotice.className = 'status-note';
-          actionsNotice.textContent = '조치 실행 연결은 준비 중입니다. 아직 지원하지 않는 조치입니다.';
-          actionsWrap.appendChild(actionsNotice);
-
+          const actWrap = el('div', 'student-detail-actions');
+          actWrap.appendChild(el('p', 'status-note', '조치 실행 연결은 준비 중입니다. 아직 지원하지 않는 조치입니다.'));
           for (const action of actionsList) {
-            const actBtn = document.createElement('button');
-            actBtn.type = 'button';
-            actBtn.disabled = true;
-            actBtn.className = 'btn btn-disabled';
-            actBtn.textContent = `${action} 미지원`;
-            actBtn.setAttribute('aria-label', `${action} 미지원`);
-            actionsWrap.appendChild(actBtn);
+            const btn = el('button', 'btn btn-disabled', `${action} 미지원`, { type: 'button', 'aria-label': `${action} 미지원` });
+            btn.disabled = true;
+            actWrap.appendChild(btn);
           }
-          detailDiv.appendChild(actionsWrap);
+          detailDiv.appendChild(actWrap);
         }
       }
 
-      // 목록 갱신 함수
       function updateList() {
         const filtered = sortedEvents.filter(ev => {
           if (currentKindFilter !== 'all' && ev.kind !== currentKindFilter) return false;
@@ -549,234 +218,102 @@ export function createStudentView() {
 
         countP.textContent = `조회 건수: ${filtered.length}건 (전체 ${sortedEvents.length}건)`;
         listUl.replaceChildren();
-
         if (filtered.length === 0) {
-          const emptyLi = document.createElement('li');
-          emptyLi.className = 'student-events-empty';
-          emptyLi.textContent = '조건에 맞는 기록이 없습니다.';
-          listUl.appendChild(emptyLi);
+          listUl.appendChild(el('li', 'student-events-empty', '조건에 맞는 기록이 없습니다.'));
           return;
         }
 
         for (const ev of filtered) {
-          const li = document.createElement('li');
-          li.className = 'student-event-item';
-          li.setAttribute('data-student-event-id', ev.id);
-
-          // 종류 한국어 변환
+          const li = el('li', 'student-event-item', null, { 'data-student-event-id': ev.id });
           const kindText = EVENT_KIND_LABELS[ev.kind] || ev.kind;
-          const appText = ev.appId || '앱을 확인할 수 없음';
+          li.appendChild(el('span', 'student-event-text', `[${ev.id}] ${ev.at || ''} · ${kindText} (${ev.kind}) · 앱: ${ev.appId || '앱을 확인할 수 없음'} · 요약: ${ev.summary || '요약 없음'}`));
 
-          const textSpan = document.createElement('span');
-          textSpan.className = 'student-event-text';
-          textSpan.textContent = `[${ev.id}] ${ev.at || ''} · ${kindText} (${ev.kind}) · 앱: ${appText} · 요약: ${ev.summary || '요약 없음'}`;
-          li.appendChild(textSpan);
-
-          // 상세 보기 버튼
-          const detailBtn = document.createElement('button');
-          detailBtn.type = 'button';
-          detailBtn.className = 'student-detail-btn btn';
-          detailBtn.textContent = `${ev.id} 상세`;
-          detailBtn.setAttribute('aria-label', `${ev.id} 상세`);
-          detailBtn.onclick = () => {
-            selectedEventId = (selectedEventId === ev.id) ? null : ev.id;
-            renderDetailSection();
-          };
+          const detailBtn = el('button', 'student-detail-btn btn', `${ev.id} 상세`, { type: 'button', 'aria-label': `${ev.id} 상세` });
+          detailBtn.onclick = () => { selectedEventId = (selectedEventId === ev.id) ? null : ev.id; renderDetailSection(); };
           li.appendChild(detailBtn);
-
           listUl.appendChild(li);
         }
       }
 
-      // 필터 이벤트 바인딩
-      kindSelect.onchange = (e) => {
-        currentKindFilter = e.target.value;
-        updateList();
-      };
-      appSelect.onchange = (e) => {
-        currentAppFilter = e.target.value;
-        updateList();
-      };
-      accessSelect.onchange = (e) => {
-        currentAccessFilter = e.target.value;
-        updateList();
-      };
-
-      // 최초 렌더링
+      kindSelect.onchange = e => { currentKindFilter = e.target.value; updateList(); };
+      appSelect.onchange = e => { currentAppFilter = e.target.value; updateList(); };
+      accessSelect.onchange = e => { currentAccessFilter = e.target.value; updateList(); };
       updateList();
       renderDetailSection();
-
       return container;
     },
+
     renderStatus({ devices, sessions, notifications, diagnostics, mode } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-status-view';
-      container.setAttribute('data-student-section', 'status');
+      const container = el('div', 'student-status-view', null, { 'data-student-section': 'status' });
+      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
 
-      // 1. 모드 안내 (loading, error, ok 모든 상태에서 mode 표시)
-      const currentMode = mode || 'unknown';
-      const modeText = MODE_LABELS[currentMode] || '확인 불가';
-      const modeEl = document.createElement('div');
-      modeEl.className = 'student-mode-badge';
-      modeEl.textContent = `모드: ${modeText}`;
-      container.appendChild(modeEl);
-
-      // 시간 초과 판별 헬퍼
-      const isTimeout = (err) => {
+      const isTimeout = err => {
         if (!err) return false;
         const text = `${err.code || ''} ${err.message || ''}`.toLowerCase();
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
-      // 2. 알림 (notifications) 영역
-      const notifSection = document.createElement('section');
-      notifSection.className = 'student-status-card';
-      const notifTitle = document.createElement('h3');
-      notifTitle.textContent = '알림 상태';
-      notifSection.appendChild(notifTitle);
-
+      const notifSection = el('section', 'student-status-card');
+      notifSection.appendChild(el('h3', null, '알림 상태'));
       const notifList = Array.isArray(notifications) ? notifications : [];
-      if (notifList.length === 0) {
-        const noNotifP = document.createElement('p');
-        noNotifP.className = 'status-empty';
-        noNotifP.textContent = '주의할 알림이 없습니다.';
-        notifSection.appendChild(noNotifP);
-      } else {
-        const notifUl = document.createElement('ul');
-        notifUl.className = 'plain-list';
-        for (const item of notifList) {
-          const li = document.createElement('li');
-          li.textContent = `[자료: ${item.resource || '미지정'}] 코드: ${item.code || '알림'} · 내용: ${item.message || ''}`;
-          notifUl.appendChild(li);
-        }
-        notifSection.appendChild(notifUl);
+      if (notifList.length === 0) notifSection.appendChild(el('p', 'status-empty', '주의할 알림이 없습니다.'));
+      else {
+        const ul = el('ul', 'plain-list');
+        for (const item of notifList) ul.appendChild(el('li', null, `[자료: ${item.resource || '미지정'}] 코드: ${item.code || '알림'} · 내용: ${item.message || ''}`));
+        notifSection.appendChild(ul);
       }
       container.appendChild(notifSection);
 
-      // 3. 기기 상태 (devices) 영역
-      const devSection = document.createElement('section');
-      devSection.className = 'student-status-card';
-      const devTitle = document.createElement('h3');
-      devTitle.textContent = '기기 점검 상태';
-      devSection.appendChild(devTitle);
-
-      if (!devices || devices.status === 'loading') {
-        const p = document.createElement('p');
-        p.className = 'status-loading';
-        p.textContent = '기기 목록을 불러오는 중…';
-        devSection.appendChild(p);
-      } else if (devices.status === 'error') {
-        const errP = document.createElement('p');
-        errP.className = 'status-alert';
+      const devSection = el('section', 'student-status-card');
+      devSection.appendChild(el('h3', null, '기기 점검 상태'));
+      if (!devices || devices.status === 'loading') devSection.appendChild(el('p', 'status-loading', '기기 목록을 불러오는 중…'));
+      else if (devices.status === 'error') {
         const timeoutNotice = isTimeout(devices.error) ? ' (요청 시간 초과)' : '';
-        errP.textContent = `기기 목록을 불러오지 못했습니다: ${devices.error?.message || '확인 불가'}${timeoutNotice}`;
-        devSection.appendChild(errP);
-
-        const retryP = document.createElement('p');
-        retryP.className = 'status-note';
-        retryP.textContent = '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)';
-        devSection.appendChild(retryP);
+        devSection.appendChild(el('p', 'status-alert', `기기 목록을 불러오지 못했습니다: ${devices.error?.message || '확인 불가'}${timeoutNotice}`));
+        devSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
       } else {
-        const devData = Array.isArray(devices.data) ? devices.data : [];
-        if (devData.length === 0) {
-          const emptyP = document.createElement('p');
-          emptyP.className = 'status-empty';
-          emptyP.textContent = '등록된 기기가 없음';
-          devSection.appendChild(emptyP);
-        } else {
-          const ul = document.createElement('ul');
-          ul.className = 'plain-list';
-          for (const d of devData) {
-            const li = document.createElement('li');
-            const dStatusRaw = d.status || 'unknown';
-            const dStatusText = DEVICE_STATUS_LABELS[dStatusRaw] || '확인 불가';
-            li.textContent = `기기: ${d.label || d.id || '기기'} (${d.id || ''}) · 상태: ${dStatusText} (${dStatusRaw})`;
-            if (dStatusRaw === 'noncompliant') li.className = 'status-warning';
-            ul.appendChild(li);
+        const dList = Array.isArray(devices.data) ? devices.data : [];
+        if (dList.length === 0) devSection.appendChild(el('p', 'status-empty', '등록된 기기가 없음'));
+        else {
+          const ul = el('ul', 'plain-list');
+          for (const d of dList) {
+            const raw = d.status || 'unknown', text = DEVICE_STATUS_LABELS[raw] || '확인 불가';
+            ul.appendChild(el('li', raw === 'noncompliant' ? 'status-warning' : null, `기기: ${d.label || d.id || '기기'} (${d.id || ''}) · 상태: ${text} (${raw})`));
           }
           devSection.appendChild(ul);
         }
       }
       container.appendChild(devSection);
 
-      // 4. 세션 상태 (sessions) 영역
-      const sessSection = document.createElement('section');
-      sessSection.className = 'student-status-card';
-      const sessTitle = document.createElement('h3');
-      sessTitle.textContent = '세션 점검 상태';
-      sessSection.appendChild(sessTitle);
-
-      const sessScopeNotice = document.createElement('p');
-      sessScopeNotice.className = 'status-note';
-      sessScopeNotice.textContent = '세션은 지금 검증된 연결 하나만 조회됩니다. (지난 세션 목록이 아님)';
-      sessSection.appendChild(sessScopeNotice);
-
-      if (!sessions || sessions.status === 'loading') {
-        const p = document.createElement('p');
-        p.className = 'status-loading';
-        p.textContent = '세션 정보를 불러오는 중…';
-        sessSection.appendChild(p);
-      } else if (sessions.status === 'error') {
-        const errP = document.createElement('p');
-        errP.className = 'status-alert';
+      const sessSection = el('section', 'student-status-card');
+      sessSection.appendChild(el('h3', null, '세션 점검 상태'));
+      sessSection.appendChild(el('p', 'status-note', '세션은 지금 검증된 연결 하나만 조회됩니다. (지난 세션 목록이 아님)'));
+      if (!sessions || sessions.status === 'loading') sessSection.appendChild(el('p', 'status-loading', '세션 정보를 불러오는 중…'));
+      else if (sessions.status === 'error') {
         const timeoutNotice = isTimeout(sessions.error) ? ' (요청 시간 초과)' : '';
-        errP.textContent = `세션 정보를 불러오지 못했습니다: ${sessions.error?.message || '확인 불가'}${timeoutNotice}`;
-        sessSection.appendChild(errP);
-
-        const retryP = document.createElement('p');
-        retryP.className = 'status-note';
-        retryP.textContent = '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)';
-        sessSection.appendChild(retryP);
+        sessSection.appendChild(el('p', 'status-alert', `세션 정보를 불러오지 못했습니다: ${sessions.error?.message || '확인 불가'}${timeoutNotice}`));
+        sessSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
       } else {
-        const sessData = Array.isArray(sessions.data) ? sessions.data : [];
-        if (sessData.length === 0) {
-          const emptyP = document.createElement('p');
-          emptyP.className = 'status-empty';
-          emptyP.textContent = '현재 연결 없음';
-          sessSection.appendChild(emptyP);
-        } else {
-          const ul = document.createElement('ul');
-          ul.className = 'plain-list';
-          for (const s of sessData) {
-            const li = document.createElement('li');
-            const sStatusRaw = s.status || 'unknown';
-            const sStatusText = SESSION_STATUS_LABELS[sStatusRaw] || '확인 불가';
-            li.textContent = `세션: ${s.id || '세션'} · 상태: ${sStatusText} (${sStatusRaw})`;
-            if (sStatusRaw === 'expired' || sStatusRaw === 'revoked') li.className = 'status-alert';
-            ul.appendChild(li);
+        const sList = Array.isArray(sessions.data) ? sessions.data : [];
+        if (sList.length === 0) sessSection.appendChild(el('p', 'status-empty', '현재 연결 없음'));
+        else {
+          const ul = el('ul', 'plain-list');
+          for (const s of sList) {
+            const raw = s.status || 'unknown', text = SESSION_STATUS_LABELS[raw] || '확인 불가';
+            ul.appendChild(el('li', (raw === 'expired' || raw === 'revoked') ? 'status-alert' : null, `세션: ${s.id || '세션'} · 상태: ${text} (${raw})`));
           }
           sessSection.appendChild(ul);
         }
       }
       container.appendChild(sessSection);
 
-      // 5. 진단 정보 (diagnostics) 영역
-      const diagSection = document.createElement('section');
-      diagSection.className = 'student-status-card';
-      const diagTitle = document.createElement('h3');
-      diagTitle.textContent = '도움정보 (진단 정보)';
-      diagSection.appendChild(diagTitle);
-
-      if (!diagnostics || diagnostics.status === 'idle') {
-        const p = document.createElement('p');
-        p.className = 'status-empty';
-        p.textContent = '도움정보가 아직 조회되지 않았습니다. 제공 화면의 「도움정보 불러오기」를 누르세요.';
-        diagSection.appendChild(p);
-      } else if (diagnostics.status === 'loading') {
-        const p = document.createElement('p');
-        p.className = 'status-loading';
-        p.textContent = '도움정보를 불러오는 중…';
-        diagSection.appendChild(p);
-      } else if (diagnostics.status === 'error') {
-        const errP = document.createElement('p');
-        errP.className = 'status-alert';
-        errP.textContent = `도움정보를 불러오지 못했습니다: ${diagnostics.error?.message || '확인 불가'}`;
-        diagSection.appendChild(errP);
-
-        const retryP = document.createElement('p');
-        retryP.className = 'status-note';
-        retryP.textContent = '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요.';
-        diagSection.appendChild(retryP);
+      const diagSection = el('section', 'student-status-card');
+      diagSection.appendChild(el('h3', null, '도움정보 (진단 정보)'));
+      if (!diagnostics || diagnostics.status === 'idle') diagSection.appendChild(el('p', 'status-empty', '도움정보가 아직 조회되지 않았습니다. 제공 화면의 「도움정보 불러오기」를 누르세요.'));
+      else if (diagnostics.status === 'loading') diagSection.appendChild(el('p', 'status-loading', '도움정보를 불러오는 중…'));
+      else if (diagnostics.status === 'error') {
+        diagSection.appendChild(el('p', 'status-alert', `도움정보를 불러오지 못했습니다: ${diagnostics.error?.message || '확인 불가'}`));
+        diagSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요.'));
       } else {
         const diagData = diagnostics.data || {};
         const safeDiagnostics = {
@@ -787,156 +324,63 @@ export function createStudentView() {
           engineMode: diagData.engine?.mode || 'unknown',
           engineCode: diagData.engine?.code || 'unknown',
         };
-
-        const ul = document.createElement('ul');
-        ul.className = 'plain-list';
-
-        const liReq = document.createElement('li');
-        liReq.textContent = `요청 ID (requestId): ${safeDiagnostics.requestId}`;
-        ul.appendChild(liReq);
-
-        const liComp = document.createElement('li');
-        liComp.textContent = `컴포넌트 (component): ${safeDiagnostics.component}`;
-        ul.appendChild(liComp);
-
-        const liVer = document.createElement('li');
-        liVer.textContent = `버전 (version): ${safeDiagnostics.version}`;
-        ul.appendChild(liVer);
-
-        const liTime = document.createElement('li');
-        liTime.textContent = `확인 시각 (checkedAt): ${safeDiagnostics.checkedAt}`;
-        ul.appendChild(liTime);
-
-        const liMode = document.createElement('li');
-        liMode.textContent = `엔진 모드 (engine.mode): ${safeDiagnostics.engineMode}`;
-        ul.appendChild(liMode);
-
-        const liCode = document.createElement('li');
-        liCode.textContent = `엔진 코드 (engine.code): ${safeDiagnostics.engineCode}`;
-        ul.appendChild(liCode);
-
+        const ul = el('ul', 'plain-list');
+        ul.appendChild(el('li', null, `요청 ID (requestId): ${safeDiagnostics.requestId}`));
+        ul.appendChild(el('li', null, `컴포넌트 (component): ${safeDiagnostics.component}`));
+        ul.appendChild(el('li', null, `버전 (version): ${safeDiagnostics.version}`));
+        ul.appendChild(el('li', null, `확인 시각 (checkedAt): ${safeDiagnostics.checkedAt}`));
+        ul.appendChild(el('li', null, `엔진 모드 (engine.mode): ${safeDiagnostics.engineMode}`));
+        ul.appendChild(el('li', null, `엔진 코드 (engine.code): ${safeDiagnostics.engineCode}`));
         diagSection.appendChild(ul);
 
-        // 도움정보 복사 버튼 (정확한 이름 「도움정보 복사」)
-        const copyBtn = document.createElement('button');
-        copyBtn.type = 'button';
-        copyBtn.className = 'btn';
-        copyBtn.textContent = '도움정보 복사';
-        copyBtn.setAttribute('aria-label', '도움정보 복사');
-
-        const copyNotice = document.createElement('p');
-        copyNotice.className = 'status-note';
-        copyNotice.textContent = '이 정보는 도움 요청에 쓰도록 비밀(API 키·토큰) 없는 안전한 값만 복사됩니다.';
-
+        const copyBtn = el('button', 'btn', '도움정보 복사', { type: 'button', 'aria-label': '도움정보 복사' });
+        const copyNotice = el('p', 'status-note', '이 정보는 도움 요청에 쓰도록 비밀(API 키·토큰) 없는 안전한 값만 복사됩니다.');
         copyBtn.onclick = async () => {
-          const textToCopy = JSON.stringify(safeDiagnostics, null, 2);
           try {
-            if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-              await navigator.clipboard.writeText(textToCopy);
-            }
+            if (navigator?.clipboard?.writeText) await navigator.clipboard.writeText(JSON.stringify(safeDiagnostics, null, 2));
             copyNotice.textContent = '도움정보가 클립보드에 안전하게 복사되었습니다.';
-          } catch {
-            copyNotice.textContent = '클립보드 복사에 실패했습니다.';
-          }
+          } catch { copyNotice.textContent = '클립보드 복사에 실패했습니다.'; }
         };
-
         diagSection.appendChild(copyBtn);
         diagSection.appendChild(copyNotice);
       }
       container.appendChild(diagSection);
-
       return container;
     },
+
     renderVulnerabilities() { return '학생 구현 대기: 정확한 설치 버전·OSV 출처·조회 시각·부분 결과·조회 실패를 구분하세요.'; },
+
     renderAiConnection({ status, mode, data, error, checkedAt, explanationAccepted } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-ai-connection-view';
-      container.setAttribute('data-student-section', 'ai-connection');
+      const container = el('div', 'student-ai-connection-view', null, { 'data-student-section': 'ai-connection' });
+      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
 
-      // 1. 모드 안내 (모든 상태에서 mode 표시)
-      const currentMode = mode || 'unknown';
-      const modeText = MODE_LABELS[currentMode] || '확인 불가';
-      const modeEl = document.createElement('div');
-      modeEl.className = 'student-mode-badge';
-      modeEl.textContent = `모드: ${modeText}`;
-      container.appendChild(modeEl);
-
-      // 2. idle: 아직 점검 전 상태
       if (!status || status === 'idle') {
-        const idleP = document.createElement('p');
-        idleP.className = 'status-empty';
-        idleP.textContent = 'AI 연결 점검 전입니다. 설정값 존재는 이용 권한 확인이 아닙니다.';
-        container.appendChild(idleP);
+        container.appendChild(el('p', 'status-empty', 'AI 연결 점검 전입니다. 설정값 존재는 이용 권한 확인이 아닙니다.'));
         return container;
       }
-
-      // 3. loading: 점검 중 상태
       if (status === 'loading') {
-        const loadP = document.createElement('p');
-        loadP.className = 'status-loading';
-        loadP.textContent = 'AI 연결 점검 중… 현재 로그인으로 모델 응답을 확인하고 있습니다.';
-        container.appendChild(loadP);
+        container.appendChild(el('p', 'status-loading', 'AI 연결 점검 중… 현재 로그인으로 모델 응답을 확인하고 있습니다.'));
         return container;
       }
-
-      // 4. error: 실패 상태
       if (status === 'error') {
-        const errWrap = document.createElement('div');
-        errWrap.className = 'status-alert';
-        errWrap.setAttribute('data-student-status', 'error');
-
-        const safeCode = error && error.code ? error.code : 'UNVERIFIED';
-        const safeMsg = error && error.message ? error.message : '확인 불가';
-
-        const errP = document.createElement('p');
-        errP.textContent = `연결 점검 실패: [${safeCode}] ${safeMsg}`;
-        errWrap.appendChild(errP);
-
-        // 코드별 원인 상세 안내
-        const causeNotice = document.createElement('p');
-        causeNotice.className = 'status-cause';
-        causeNotice.textContent = getAiErrorGuidance(safeCode, safeMsg);
-        errWrap.appendChild(causeNotice);
-
-        // 수동 재점검 안내
-        const retryNotice = document.createElement('p');
-        retryNotice.className = 'status-note';
-        retryNotice.textContent = '다시 점검은 제공 화면의 점검 버튼을 직접 누르세요. (자동으로 다시 점검하지 않습니다)';
-        errWrap.appendChild(retryNotice);
-
+        const safeCode = error?.code || 'UNVERIFIED', safeMsg = error?.message || '확인 불가';
+        const errWrap = el('div', 'status-alert', null, { 'data-student-status': 'error' });
+        errWrap.appendChild(el('p', null, `연결 점검 실패: [${safeCode}] ${safeMsg}`));
+        errWrap.appendChild(el('p', 'status-cause', getAiErrorGuidance(safeCode, safeMsg)));
+        errWrap.appendChild(el('p', 'status-note', '다시 점검은 제공 화면의 점검 버튼을 직접 누르세요. (자동으로 다시 점검하지 않습니다)'));
         container.appendChild(errWrap);
         return container;
       }
 
-      // 5. ok: 점검 완료 상태
       const auth = data?.audienceAuthorization;
-      const authText = auth === 'test'
-        ? '시험 연결 점검(test)'
-        : (auth === 'verified' ? '앱 권한 확인 후 점검(verified)' : `${auth || '확인 불가'}(${auth || 'unknown'})`);
-
-      const authP = document.createElement('p');
-      authP.className = 'student-ai-auth';
-      authP.textContent = `권한 확인 상태: ${authText}`;
-      container.appendChild(authP);
-
-      const countP = document.createElement('p');
-      countP.className = 'student-ai-models';
-      countP.textContent = `응답 모델 수: ${data?.modelCount ?? 0}개`;
-      container.appendChild(countP);
-
-      const timeP = document.createElement('p');
-      timeP.className = 'student-ai-time';
-      timeP.textContent = `점검 시각: ${checkedAt || '확인 불가'}`;
-      container.appendChild(timeP);
-
-      // 사건 설명 미실행 명시 (중요: 모델 목록 응답을 사건 설명으로 혼동하지 않게 함)
-      const notRunP = document.createElement('p');
-      notRunP.className = 'status-note';
-      notRunP.textContent = '사건 설명은 아직 실행하지 않았습니다. (연결 상태만 점검되었으며 실제 사건 설명은 보안 기록에서 별도로 실행됩니다)';
-      container.appendChild(notRunP);
-
+      const authText = auth === 'test' ? '시험 연결 점검(test)' : (auth === 'verified' ? '앱 권한 확인 후 점검(verified)' : `${auth || '확인 불가'}(${auth || 'unknown'})`);
+      container.appendChild(el('p', 'student-ai-auth', `권한 확인 상태: ${authText}`));
+      container.appendChild(el('p', 'student-ai-models', `응답 모델 수: ${data?.modelCount ?? 0}개`));
+      container.appendChild(el('p', 'student-ai-time', `점검 시각: ${checkedAt || '확인 불가'}`));
+      container.appendChild(el('p', 'status-note', '사건 설명은 아직 실행하지 않았습니다. (연결 상태만 점검되었으며 실제 사건 설명은 보안 기록에서 별도로 실행됩니다)'));
       return container;
     },
+
     // [AI 모델 호출 계약 검토 참고 (ai_model_called 연계 흐름)]
     // 1. 요청: on-client/public/app.js의 requestAiExplanation -> POST /api/ai/explain { eventId }
     // 2. 서버 라우팅: on-client/src/server.mjs의 POST /api/ai/explain -> mappedService().explainIncident(...)
@@ -944,86 +388,38 @@ export function createStudentView() {
     // 4. 전송기: on-client/vendor/clco-http.mjs의 createClcoClient -> loopback/HTTPS 모델 엔드포인트 실제 HTTP 전송
     // 5. 표시: on-client/student/extension.mjs의 renderExplanation -> ok 응답 시 요약 표시 및 data-student-explanation-event 부착
     renderExplanation({ event, explanation, checkedAt } = {}) {
-      const container = document.createElement('div');
-      container.className = 'student-explanation-view';
-      container.setAttribute('data-student-section', 'explanation');
+      const container = el('div', 'student-explanation-view', null, { 'data-student-section': 'explanation' });
+      const expResource = explanation || {}, status = expResource.status || 'idle';
 
-      const expResource = explanation || {};
-      const status = expResource.status || 'idle';
-
-      // 1. idle: 요청 전 상태
       if (status === 'idle') {
-        const idleP = document.createElement('p');
-        idleP.className = 'status-empty';
-        idleP.textContent = '사건을 선택하고 AI 설명을 요청하세요.';
-        container.appendChild(idleP);
+        container.appendChild(el('p', 'status-empty', '사건을 선택하고 AI 설명을 요청하세요.'));
         return container;
       }
-
-      // 2. loading: 생성 중 상태
       if (status === 'loading') {
-        const loadP = document.createElement('p');
-        loadP.className = 'status-loading';
-        loadP.textContent = '사건 설명을 생성하는 중…';
-        container.appendChild(loadP);
+        container.appendChild(el('p', 'status-loading', '사건 설명을 생성하는 중…'));
         return container;
       }
-
-      // 3. error: 실패 상태 (data-student-explanation-event 속성 제외)
       if (status === 'error') {
-        const errWrap = document.createElement('div');
-        errWrap.className = 'status-alert';
-        errWrap.setAttribute('data-student-status', 'error');
-
-        const safeCode = expResource.error?.code || 'ERROR';
-        const safeMsg = expResource.error?.message || '확인 불가';
-
-        const errP = document.createElement('p');
-        errP.textContent = `설명 생성 실패: [${safeCode}] ${safeMsg}`;
-        errWrap.appendChild(errP);
-
-        const noticeP = document.createElement('p');
-        noticeP.className = 'status-note';
-        noticeP.textContent = '사건 기록은 그대로 유지됩니다. (실패는 기록을 변경하지 않습니다)';
-        errWrap.appendChild(noticeP);
-
+        const safeCode = expResource.error?.code || 'ERROR', safeMsg = expResource.error?.message || '확인 불가';
+        const errWrap = el('div', 'status-alert', null, { 'data-student-status': 'error' });
+        errWrap.appendChild(el('p', null, `설명 생성 실패: [${safeCode}] ${safeMsg}`));
+        errWrap.appendChild(el('p', 'status-note', '사건 기록은 그대로 유지됩니다. (실패는 기록을 변경하지 않습니다)'));
         container.appendChild(errWrap);
         return container;
       }
 
-      // 4. ok: 성공 상태 (data-student-explanation-event 속성은 ok일 때만 부착)
       if (status === 'ok') {
-        if (event && event.id) {
-          container.setAttribute('data-student-explanation-event', event.id);
-        }
-
-        const eventIdP = document.createElement('p');
-        eventIdP.className = 'student-explanation-event-id';
-        eventIdP.textContent = `사건 ID: ${event?.id || '알 수 없음'}`;
-        container.appendChild(eventIdP);
-
-        const summaryP = document.createElement('p');
-        summaryP.className = 'student-explanation-summary';
-        summaryP.textContent = `설명 요약: ${expResource.data?.summary || '요약 없음'}`;
-        container.appendChild(summaryP);
-
-        if (checkedAt) {
-          const timeP = document.createElement('p');
-          timeP.className = 'student-explanation-time';
-          timeP.textContent = `확인 시각: ${checkedAt}`;
-          container.appendChild(timeP);
-        }
-
+        if (event && event.id) container.setAttribute('data-student-explanation-event', event.id);
+        container.appendChild(el('p', 'student-explanation-event-id', `사건 ID: ${event?.id || '알 수 없음'}`));
+        container.appendChild(el('p', 'student-explanation-summary', `설명 요약: ${expResource.data?.summary || '요약 없음'}`));
+        if (checkedAt) container.appendChild(el('p', 'student-explanation-time', `확인 시각: ${checkedAt}`));
         return container;
       }
 
-      // 5. 기타 상태 (unknown 등)
-      const unknownP = document.createElement('p');
-      unknownP.className = 'status-note';
-      unknownP.textContent = `설명 상태: ${status}`;
-      container.appendChild(unknownP);
+      container.appendChild(el('p', 'status-note', `설명 상태: ${status}`));
       return container;
     },
+
     renderAction() { return '학생 구현 대기: 현재 사건·조치·실제 대상·사람 확인·ACK와 원천 효과·unknown을 구분하세요.'; },
   };
 }
