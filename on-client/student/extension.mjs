@@ -77,7 +77,7 @@ export function createStudentView() {
       const devStatusText = DEVICE_STATUS_LABELS[devStatusRaw] || '확인 불가';
       const devLabel = deviceData.label || deviceData.id || '확인 불가';
       const devIdPart = deviceData.id && deviceData.label ? ` (${deviceData.id})` : '';
-      deviceP.textContent = `기기: ${devLabel}${devIdPart} · 상태: ${devStatusText}`;
+      deviceP.textContent = `기기: ${devLabel}${devIdPart} · 상태: ${devStatusText} (${devStatusRaw})`;
       if (devStatusRaw === 'noncompliant') {
         deviceP.className = 'student-identity-device status-warning';
         deviceP.setAttribute('data-student-status', 'noncompliant');
@@ -91,7 +91,7 @@ export function createStudentView() {
       const sessStatusRaw = sessionData.status || 'unknown';
       const sessStatusText = SESSION_STATUS_LABELS[sessStatusRaw] || '확인 불가';
       const sessId = sessionData.id || '확인 불가';
-      sessionP.textContent = `세션: ${sessId} · 상태: ${sessStatusText}`;
+      sessionP.textContent = `세션: ${sessId} · 상태: ${sessStatusText} (${sessStatusRaw})`;
       if (sessStatusRaw === 'expired' || sessStatusRaw === 'revoked') {
         sessionP.className = 'student-identity-session status-alert';
         sessionP.setAttribute('data-student-status', sessStatusRaw);
