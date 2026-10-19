@@ -937,6 +937,12 @@ export function createStudentView() {
 
       return container;
     },
+    // [AI 모델 호출 계약 검토 참고 (ai_model_called 연계 흐름)]
+    // 1. 요청: on-client/public/app.js의 requestAiExplanation -> POST /api/ai/explain { eventId }
+    // 2. 서버 라우팅: on-client/src/server.mjs의 POST /api/ai/explain -> mappedService().explainIncident(...)
+    // 3. 서비스: on-client/src/ai/service.mjs의 createOnAiService -> clcoClient.request('/v1/chat/completions', ...)
+    // 4. 전송기: on-client/vendor/clco-http.mjs의 createClcoClient -> loopback/HTTPS 모델 엔드포인트 실제 HTTP 전송
+    // 5. 표시: on-client/student/extension.mjs의 renderExplanation -> ok 응답 시 요약 표시 및 data-student-explanation-event 부착
     renderExplanation({ event, explanation, checkedAt } = {}) {
       const container = document.createElement('div');
       container.className = 'student-explanation-view';
@@ -985,28 +991,37 @@ export function createStudentView() {
         return container;
       }
 
-      // 4. ok: 성공 상태
-      if (event && event.id) {
-        container.setAttribute('data-student-explanation-event', event.id);
+      // 4. ok: 성공 상태 (data-student-explanation-event 속성은 ok일 때만 부착)
+      if (status === 'ok') {
+        if (event && event.id) {
+          container.setAttribute('data-student-explanation-event', event.id);
+        }
+
+        const eventIdP = document.createElement('p');
+        eventIdP.className = 'student-explanation-event-id';
+        eventIdP.textContent = `사건 ID: ${event?.id || '알 수 없음'}`;
+        container.appendChild(eventIdP);
+
+        const summaryP = document.createElement('p');
+        summaryP.className = 'student-explanation-summary';
+        summaryP.textContent = `설명 요약: ${expResource.data?.summary || '요약 없음'}`;
+        container.appendChild(summaryP);
+
+        if (checkedAt) {
+          const timeP = document.createElement('p');
+          timeP.className = 'student-explanation-time';
+          timeP.textContent = `확인 시각: ${checkedAt}`;
+          container.appendChild(timeP);
+        }
+
+        return container;
       }
 
-      const eventIdP = document.createElement('p');
-      eventIdP.className = 'student-explanation-event-id';
-      eventIdP.textContent = `사건 ID: ${event?.id || '알 수 없음'}`;
-      container.appendChild(eventIdP);
-
-      const summaryP = document.createElement('p');
-      summaryP.className = 'student-explanation-summary';
-      summaryP.textContent = `설명 요약: ${expResource.data?.summary || '요약 없음'}`;
-      container.appendChild(summaryP);
-
-      if (checkedAt) {
-        const timeP = document.createElement('p');
-        timeP.className = 'student-explanation-time';
-        timeP.textContent = `확인 시각: ${checkedAt}`;
-        container.appendChild(timeP);
-      }
-
+      // 5. 기타 상태 (unknown 등)
+      const unknownP = document.createElement('p');
+      unknownP.className = 'status-note';
+      unknownP.textContent = `설명 상태: ${status}`;
+      container.appendChild(unknownP);
       return container;
     },
     renderAction() { return '학생 구현 대기: 현재 사건·조치·실제 대상·사람 확인·ACK와 원천 효과·unknown을 구분하세요.'; },
