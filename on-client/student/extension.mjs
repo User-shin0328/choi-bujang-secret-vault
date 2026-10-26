@@ -109,6 +109,45 @@ export function createStudentView() {
       const isDemo = mode === 'demo';
       const sourceTag = isDemo ? '[예시: 설명용 데모 데이터]' : '[실측: 로컬 시스템 측정값]';
       
+      // 타임라인 가독성 스타일 블록 (줄간격 line-height: 1.75 및 글간격 letter-spacing: 0.025em 적절히 확장)
+      const timelineStyle = el('style', null, `
+        .student-timeline-list { display: flex; flex-direction: column; gap: 14px; padding: 0; list-style: none; margin: 16px 0; }
+        .student-timeline-item {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+          padding: 14px 18px; border: 1px solid var(--border, #d9dde3);
+          border-left: 5px solid var(--accent, #2357c6); border-radius: 8px;
+          background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .student-timeline-time {
+          padding: 5px 12px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
+          background: #e7eefc; color: #2357c6; border-radius: 6px; white-space: nowrap;
+        }
+        .student-item-source {
+          padding: 4px 10px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+          border-radius: 6px; white-space: nowrap;
+        }
+        .student-item-source.tag-demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
+        .student-item-source.tag-real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
+        .student-event-text {
+          flex: 1 1 520px; line-height: 1.8; letter-spacing: 0.025em; font-size: 0.95rem;
+          color: var(--text, #1c2430); word-break: keep-all; overflow-wrap: break-word;
+        }
+        .student-timeline-quick-tabs { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
+        .student-timeline-quick-tabs .btn-tab {
+          padding: 8px 18px; font-size: 0.9rem; letter-spacing: 0.03em; font-weight: 600;
+          border-radius: 20px; border: 1px solid #d9dde3; background: #ffffff; cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .student-timeline-quick-tabs .btn-tab.active {
+          background: #2357c6; color: #ffffff; border-color: #2357c6;
+        }
+        .student-events-filters { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+        .student-filter-label { font-size: 0.9rem; letter-spacing: 0.02em; line-height: 1.6; }
+        .student-detail-btn { margin-left: auto; padding: 6px 14px; font-size: 0.85rem; white-space: nowrap; }
+      `);
+      container.appendChild(timelineStyle);
+
       const badgeWrap = el('div', 'student-mode-badge-wrap');
       badgeWrap.appendChild(el('span', 'student-mode-badge', `모드: ${modeLabel}`));
       badgeWrap.appendChild(el('span', `student-source-badge ${isDemo ? 'badge-demo' : 'badge-real'}`, sourceTag));

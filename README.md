@@ -777,6 +777,7 @@ npm run xdr:run -- brute-force
    - **시각순 타임라인**: 최근 발생 시각 기준 내림차순으로 정렬된 타임라인 리스트를 표시합니다.
    - **종류별 원클릭 필터 탭**: 전체 기록, 인증 사건(`auth`), 업무 앱 접근(`access`), XDR 경보(`alert`) 탭을 통해 즉시 거르기(필터링)를 지원합니다.
    - **실측값 vs 예시값 구분 배지**: 각 사건 항목 및 상단에 로컬 시스템 실측값(`[실측]`)과 데모 모드 설명용 가상 데이터(`[예시]`)를 분리 표시합니다.
+   - **가독성 스타일 개선**: 타임라인 목록 줄간격(`line-height: 1.8`), 글간격(`letter-spacing: 0.025em`), 카드 항목 간격(`gap: 14px`, `padding: 14px 18px`)을 적절히 넓혀 시인성을 개선했습니다.
 2. **기본 포장 및 바로가기 스크립트 (`npm run package-app`)**:
    - `on-client/tools/package-app.mjs`를 통해 Node.js 24 런타임 검사, 문법 무결성 점검, `run-bankhar-b.bat` 원클릭 실행 런처, `package-manifest.json`을 자동 생성합니다.
    - 생성된 `run-bankhar-b.bat` 실행 시 브라우저 자동 오픈과 서버 기동을 한 번에 처리합니다.
