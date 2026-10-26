@@ -747,7 +747,7 @@ npm run xdr:run -- brute-force
    - 특정 사용자 PC의 절대 경로(`C:\Users\...`)에 의존하지 않고, 임의의 빈 작업 폴더에서 상대 경로만으로 저장소를 복제(`git clone ... repro-client`), `cd on-client` 이동, Node.js 24 런타임 검증, `npm run check`, `npm run demo`, 브라우저 확인, `Ctrl + C` 종료 및 재실행할 수 있는 범용 절차를 수립했습니다.
    - 런타임 의존성 없는 순수 Node.js 24 내장 모듈 사용과 환경 변수 기반 비밀값 분리를 확인했습니다.
 2. **13~22단계 누적 동작 재현 대조표 (`cumulative_source_consistency`, `reproduction_record_consistency`)**:
-   - 현재 22단계 제출 커밋(`67d14f3b3e8b578de83990dd87642e6e1a7b0b0e`)과 소스코드를 단일 기준으로 삼아 13단계부터 22단계까지 각 기능의 재현 결과(재현됨, 연결 없음, 확인 불가), 확인 시각, 비고(예제 자료/demo 명시), 코드 근거, 미확인 원인을 표로 정리했습니다.
+   - 현재 22단계 제출 커밋(`485bc36f0d68b13fb93821d5b85017dafc2c68d4`)과 소스코드를 단일 기준으로 삼아 13단계부터 22단계까지 각 기능의 재현 결과(재현됨, 연결 없음, 확인 불가), 확인 시각, 비고(예제 자료/demo 명시), 코드 근거, 미확인 원인을 표로 정리했습니다.
    - 예제 자료(`demo`) 결과와 실제 시스템 연결 성공을 명확히 구분하여 기록했습니다.
 3. **지속 데이터 및 SQLite 백업·복원 계획 (`data_preservation_plan`)**:
    - 조치 모듈(`createActionService`, `on-client/src/actions/store.mjs`)이 사용하는 지속 SQLite DB(`databasePath`: `alekov_action_intents`, `state`, `audit` 테이블)의 보존 계획을 수립했습니다.
