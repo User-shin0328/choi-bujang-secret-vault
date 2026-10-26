@@ -381,10 +381,9 @@ export function createStudentView() {
       return container;
     },
 
-    // ============================================================================
     // [검토 원문: ai_model_called 심판 검토 자료]
-    // 1. 요청: on-client/public/app.js의 requestAiExplanation -> POST /api/ai/explain { eventId }
-    // 2. 서버 라우팅 원문 (on-client/src/server.mjs L527-L545):
+    // 1. 요청: app.js의 requestAiExplanation -> POST /api/ai/explain { eventId }
+    // 2. 서버 라우팅 원문 (server.mjs L527-L545):
     //    if(req.method==='POST'&&url.pathname==='/api/ai/explain'){
     //      const {eventId}=await bounded(()=>jsonBody(req,['eventId']));
     //      const identity=assertData('identity',await call('readIdentity'));
@@ -399,22 +398,19 @@ export function createStudentView() {
     //      if(!output?.ok){send(503,{ok:false,error:aiFailure(output)});return;}
     //      send(200,{ok:true,data:{explanation:assertExplanation(output.explanation,event,aiSecrets)}});return;
     //    }
-    // 3. 서비스 원문 (on-client/src/ai/service.mjs):
-    //    explainIncident -> client.request('/chat', { ... })
-    // 4. HTTP 전송기 원문 (on-client/vendor/clco-http.mjs L56-L96):
+    // 3. 서비스: service.mjs의 explainIncident -> client.request('/chat', { ... })
+    // 4. HTTP 전송기 원문 (clco-http.mjs L56-L96):
     //    async function request(endpoint, body, { signal } = {}) {
     //      const response = await fetch(base.href.replace(/\/$/, '') + endpoint, {
     //        method: body ? 'POST' : 'GET',
     //        headers: { authorization: `Bearer ${authAppToken}`, accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
-    //        body: body ? JSON.stringify(body) : undefined,
-    //        signal: controller.signal
+    //        body: body ? JSON.stringify(body) : undefined, signal: controller.signal
     //      });
     //      const bytes = []; for await (const chunk of boundedBytes()) bytes.push(chunk);
     //      const payload = JSON.parse(new TextDecoder('utf-8').decode(Buffer.concat(bytes)));
     //      if (!response.ok || payload?.error) throw serverFailure(response.status, payload);
     //      return payload;
     //    }
-    // ============================================================================
     renderExplanation({ event, explanation, checkedAt } = {}) {
       const container = el('div', 'student-explanation-view', null, { 'data-student-section': 'explanation' });
       const expResource = explanation || {}, status = expResource.status || 'idle';
@@ -551,6 +547,82 @@ export function createStudentView() {
       return container;
     },
 
-    renderAction() { return '학생 구현 대기: 현재 사건·조치·실제 대상·사람 확인·ACK와 원천 효과·unknown을 구분하세요.'; },
+    renderAction({ status, event, actionId, target, receipt, observation, message, confirmationExpiresAt, error } = {}) {
+      const curStatus = status || 'idle';
+      const container = el('div', 'student-action-view', null, {
+        'data-student-section': 'action',
+        'data-student-action-status': curStatus
+      });
+
+      if (event && event.id) container.setAttribute('data-student-action-event', event.id);
+      if (receipt && receipt.requestId) container.setAttribute('data-student-action-request', receipt.requestId);
+
+      container.appendChild(el('h4', 'student-action-title', '보안 조치 요청 상태'));
+
+      // succeeded는 observation.effectApplied === true일 때만 효과 확인, 아니면 unknown(결과 불명)
+      const isEffectApplied = curStatus === 'succeeded' && observation?.effectApplied === true;
+      const effStatus = (curStatus === 'succeeded' && !isEffectApplied) ? 'unknown' : curStatus;
+
+      if (effStatus === 'idle') {
+        container.appendChild(el('p', 'student-action-status-text status-idle', '상태: 아직 미실행 (idle)'));
+        container.appendChild(el('p', 'status-note', '아직 보안 조치가 준비되거나 실행되지 않았습니다.'));
+      } else if (effStatus === 'loading') {
+        container.appendChild(el('p', 'student-action-status-text status-loading', '상태: 조치 준비 또는 결과 조회 중 (loading)'));
+        container.appendChild(el('p', 'status-note', '서버에서 조치 상태를 조회하고 있습니다. (완료 아님)'));
+      } else if (effStatus === 'prepared') {
+        container.appendChild(el('p', 'student-action-status-text status-prepared', '상태: 준비됨·미실행 (prepared)'));
+        container.appendChild(el('p', 'status-note', '사람 확인이 필요하며 아직 서버에 실행 요청을 전송하지 않았습니다. (미실행)'));
+        if (confirmationExpiresAt) container.appendChild(el('p', 'student-action-expiry', `확인 기한: ${confirmationExpiresAt}`));
+      } else if (effStatus === 'executing') {
+        container.appendChild(el('p', 'student-action-status-text status-executing', '상태: 서버에 전달 중 (executing)'));
+        container.appendChild(el('p', 'status-note', '조치 실행 요청이 서버로 전송 중이며, 결과가 아직 확인되지 않았습니다. (완료 아님)'));
+      } else if (effStatus === 'pending') {
+        container.appendChild(el('p', 'student-action-status-text status-pending', '상태: 서버 접수·처리 중 (pending)'));
+        container.appendChild(el('p', 'status-note', '서버가 요청을 접수(ACK)하여 처리 중입니다. 접수 응답은 조치 효과가 아니며 완료가 아닙니다.'));
+      } else if (effStatus === 'succeeded') {
+        container.appendChild(el('p', 'student-action-status-text status-succeeded status-observed', '상태: 효과 확인 (succeeded)'));
+        container.appendChild(el('p', 'student-action-effect', '연동 시스템의 실제 효과가 확인되었습니다. (effectApplied: true)'));
+        if (observation?.observedAt) container.appendChild(el('p', 'student-action-observed-at', `관측 시각: ${observation.observedAt}`));
+        if (receipt?.receiptId) container.appendChild(el('p', 'student-action-receipt-id', `영수증 ID: ${receipt.receiptId}`));
+      } else if (effStatus === 'denied') {
+        container.appendChild(el('p', 'student-action-status-text status-denied status-alert', '상태: 거절 (denied)'));
+        container.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템에서 조치를 거절했습니다.'}`));
+      } else if (effStatus === 'failed') {
+        container.appendChild(el('p', 'student-action-status-text status-failed status-alert', '상태: 실패 (failed)'));
+        container.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템 조치 실행에 실패했습니다.'}`));
+      } else if (effStatus === 'unknown') {
+        container.appendChild(el('p', 'student-action-status-text status-unknown status-alert', '상태: 결과 불명 (unknown)'));
+        container.appendChild(el('p', 'status-note', '효과 없음으로도 성공으로도 단정하지 마세요. 결과만 재조회하세요.'));
+      } else if (effStatus === 'expired') {
+        container.appendChild(el('p', 'student-action-status-text status-expired status-alert', '상태: 확인 기한 지남 (expired)'));
+        container.appendChild(el('p', 'status-note', '사람 확인 기한이 만료되었습니다. 처음부터 다시 준비하세요.'));
+      } else if (effStatus === 'error') {
+        const safeCode = error?.code || 'ERROR', safeMsg = error?.message || message || '요청이 처리되지 않았습니다.';
+        container.appendChild(el('p', 'student-action-status-text status-error status-alert', `상태: 요청 처리 안 됨 (error) [${safeCode}]`));
+        container.appendChild(el('p', 'status-note', `오류 내용: ${safeMsg}`));
+      } else {
+        container.appendChild(el('p', 'student-action-status-text', `상태: ${effStatus}`));
+      }
+
+      // 식별자 및 세부 정보
+      const dUl = el('ul', 'student-action-details');
+      if (event?.id) dUl.appendChild(el('li', null, `사건 ID: ${event.id}`));
+      if (Array.isArray(event?.evidence) && event.evidence.length > 0) {
+        const evIds = event.evidence.map(e => e.id).filter(Boolean).join(', ');
+        if (evIds) dUl.appendChild(el('li', null, `근거 ID: ${evIds}`));
+      }
+      if (actionId) dUl.appendChild(el('li', null, `조치 ID: ${actionId}`));
+      if (target?.id) {
+        const genPart = target.generation !== undefined ? ` (세대: ${target.generation})` : '';
+        dUl.appendChild(el('li', null, `실제 대상: ${target.id}${genPart}`));
+      }
+      if (receipt?.requestId) dUl.appendChild(el('li', null, `요청 ID: ${receipt.requestId}`));
+      if (receipt?.receiptId) dUl.appendChild(el('li', null, `영수증 ID: ${receipt.receiptId}`));
+      if (receipt?.version !== undefined) dUl.appendChild(el('li', null, `버전: ${receipt.version}`));
+      if (dUl.children.length > 0) container.appendChild(dUl);
+
+      container.appendChild(el('p', 'status-note', '보안 조치 준비·집행·재조회는 제공 화면 버튼을 사용하세요. (학생 영역 임의 조치 버튼 미제공)'));
+      return container;
+    },
   };
 }

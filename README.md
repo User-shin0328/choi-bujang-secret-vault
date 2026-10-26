@@ -639,6 +639,40 @@ npm run xdr:run -- brute-force
   ```
   브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보안 기록」 메뉴에서 사건을 선택해 연계 설명을 확인합니다.
 
+## 19단계: 보안 조치 요청 상태와 실제 결과 구분 (bankhar_b)
+
+19단계에서는 `on-client/student/extension.mjs`의 `renderAction`을 완성하여 조치 제안·사용자 확인·서버 전달·접수(ACK)·실제 연동 효과 관측을 엄격히 구분하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **상태별 명확한 분리 및 부정 표현 안내**:
+   - `idle`: "상태: 아직 미실행 (idle)"
+   - `loading`: "상태: 조치 준비 또는 결과 조회 중 (loading)" (완료 아님)
+   - `prepared`: "상태: 준비됨·미실행 (prepared)" 및 사람 확인 필요 명시, 확인 기한(`confirmationExpiresAt`) 표시
+   - `executing`: "상태: 서버에 전달 중 (executing)" (완료 아님, 결과 미확인)
+   - `pending`: "상태: 서버 접수·처리 중 (pending)" (접수 응답 ACK는 효과가 아니며 완료 아님)
+   - `denied`: "상태: 거절 (denied)" 및 사유 표시
+   - `failed`: "상태: 실패 (failed)" 및 사유 표시
+   - `expired`: "상태: 확인 기한 지남 (expired)" 및 다시 준비 안내
+   - `error`: "상태: 요청 처리 안 됨 (error)" 및 안전한 오류 코드·메시지 표시
+2. **원천 효과 관측 엄격 검증 (`succeeded` vs `unknown`)**:
+   - `status === 'succeeded'`이더라도 `observation?.effectApplied === true`인 경우에만 "상태: 효과 확인 (succeeded)" 및 실제 관측 시각, 영수증 ID를 표시합니다.
+   - `observation?.effectApplied`가 `true`가 아니면 "상태: 결과 불명 (unknown)"으로 강제 전환하여 성공으로 조기 단정하지 않습니다.
+   - `unknown` 상태에서는 효과 없음으로도 성공으로도 단정하지 말고 결과만 재조회하도록 명확히 안내합니다.
+3. **요청 및 식별자 바인딩**:
+   - 최상위 컨테이너에 `data-student-section="action"`, `data-student-action-status`, `data-student-action-event=event.id`, `data-student-action-request=receipt.requestId` 속성을 부여합니다.
+   - 사건 ID, 근거 ID, 조치 ID, 대상 ID(세대 포함), 요청 ID, 영수증 ID, 버전을 있는 범위에서 안전하게 표시합니다.
+4. **임의 실행 차단**:
+   - 학생 함수 내부에 임의의 조치 버튼·POST 요청을 추가하지 않고, 제공 화면의 버튼을 사용하도록 안내합니다.
+
+### 다시 실행하는 방법
+- 문법 검사: `node --check on-client/student/extension.mjs`
+- 데모 실행:
+  ```powershell
+  cd on-client
+  npm run demo
+  ```
+  브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보안 기록」 메뉴의 사건에서 조치 상태 및 실제 결과 표시를 확인합니다.
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
