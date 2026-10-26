@@ -419,28 +419,131 @@ export function createStudentView() {
       const container = el('div', 'student-explanation-view', null, { 'data-student-section': 'explanation' });
       const expResource = explanation || {}, status = expResource.status || 'idle';
 
-      if (status === 'idle') {
-        container.appendChild(el('p', 'status-empty', '사건을 선택하고 AI 설명을 요청하세요.'));
-        return container;
-      }
-      if (status === 'loading') {
-        container.appendChild(el('p', 'status-loading', '사건 설명을 생성하는 중…'));
-        return container;
-      }
+      // 1. explanation.status가 error이면 event가 null이어도 오류 코드·메시지와 실패 이유를 먼저 표시
       if (status === 'error') {
         const safeCode = expResource.error?.code || 'ERROR', safeMsg = expResource.error?.message || '확인 불가';
         const errWrap = el('div', 'status-alert', null, { 'data-student-status': 'error' });
-        errWrap.appendChild(el('p', null, `설명 생성 실패: [${safeCode}] ${safeMsg}`));
-        errWrap.appendChild(el('p', 'status-note', '사건 기록은 그대로 유지됩니다. (실패는 기록을 변경하지 않습니다)'));
+        errWrap.appendChild(el('p', null, `AI 설명 실패: [${safeCode}] ${safeMsg}`));
+        if (expResource.data?.executed === true || safeCode === 'ALREADY_EXECUTED') {
+          errWrap.appendChild(el('p', null, 'AI가 이미 실행했다고 답한 설명은 쓸 수 없습니다.'));
+        }
+        errWrap.appendChild(el('p', 'status-note', '기록은 그대로이며 과제 실패가 아닙니다. (사건 기록은 그대로 유지됩니다)'));
         container.appendChild(errWrap);
         return container;
       }
 
+      // 2. 오류 없이 event가 null인 경우: 보안 기록 선택 안내
+      if (!event) {
+        container.appendChild(el('p', 'status-empty', '보안 기록에서 기록을 먼저 고르세요.'));
+        return container;
+      }
+
+      // 3. loading 상태
+      if (status === 'loading') {
+        container.appendChild(el('p', 'status-loading', '설명 요청 중… (사건 설명을 생성하는 중…)'));
+        return container;
+      }
+
+      // 4. idle 상태
+      if (status === 'idle') {
+        container.appendChild(el('p', 'status-empty', '사건을 선택하고 AI 설명을 요청하세요.'));
+        return container;
+      }
+
+      // 5. ok 상태: 근거 유효성 대조 및 조치 제안 검증
       if (status === 'ok') {
-        if (event && event.id) container.setAttribute('data-student-explanation-event', event.id);
-        container.appendChild(el('p', 'student-explanation-event-id', `사건 ID: ${event?.id || '알 수 없음'}`));
-        container.appendChild(el('p', 'student-explanation-summary', `설명 요약: ${expResource.data?.summary || '요약 없음'}`));
-        if (checkedAt) container.appendChild(el('p', 'student-explanation-time', `확인 시각: ${checkedAt}`));
+        const expData = expResource.data || {};
+        const evidenceList = Array.isArray(event.evidence) ? event.evidence : [];
+        const evidenceMap = new Map(evidenceList.map(e => [e.id, e.text]));
+        const refIds = Array.isArray(expData.evidenceIds) ? expData.evidenceIds : [];
+
+        // 검증 A: AI가 이미 실행했다고 답한 설명은 수용 거부 (executed: true 거절)
+        if (expData.executed === true) {
+          const rejectWrap = el('div', 'status-alert', null, { 'data-student-status': 'error' });
+          rejectWrap.appendChild(el('p', null, 'AI 설명 거절: AI가 이미 실행했다고 답한 설명은 쓸 수 없습니다.'));
+          rejectWrap.appendChild(el('p', 'status-note', '보안 조치는 사람 확인이 필요하며 AI가 임의로 실행할 수 없습니다.'));
+          container.appendChild(rejectWrap);
+          return container;
+        }
+
+        // 검증 B: 근거 ID 대조 - 사건 근거에 없는 ID가 있거나 근거가 일치하지 않으면 거절
+        const missingEvidence = refIds.some(id => !evidenceMap.has(id));
+        if (missingEvidence || (refIds.length === 0 && evidenceList.length > 0)) {
+          const rejectWrap = el('div', 'status-alert', null, { 'data-student-status': 'error' });
+          const codePart = expResource.error?.code ? ` [${expResource.error.code}]` : '';
+          rejectWrap.appendChild(el('p', null, `AI 설명 거절${codePart}: 근거가 맞지 않아 설명을 쓸 수 없습니다.`));
+          rejectWrap.appendChild(el('p', 'status-note', '근거 ID가 사건 기록과 일치하지 않아 설명을 수용하지 않으며, 내용을 지어내지 않습니다.'));
+          container.appendChild(rejectWrap);
+          return container;
+        }
+
+        // 검증 통과: 성공 표식 지정 (성공한 설명에만 data-student-explanation-event 지정)
+        container.setAttribute('data-student-explanation-event', event.id);
+
+        // 1) 사건 ID, 참고용 AI 설명 제목 및 요약
+        container.appendChild(el('h4', 'student-explanation-title', 'AI 설명 (참고용)'));
+        container.appendChild(el('p', 'student-explanation-event-id', `사건 ID: ${event.id}`));
+        container.appendChild(el('p', 'student-explanation-summary', `설명 요약: ${expData.summary || '요약 없음'}`));
+        container.appendChild(el('p', 'status-note', 'AI 설명은 참고 정보(해석)이며, 사실 판단은 근거 글과 연동 시스템이 알려 준 상태로 합니다.'));
+
+        // 2) 인용한 근거 ID 및 근거 글 표시 ("근거 ID — 근거 글")
+        container.appendChild(el('h5', 'student-explanation-section-title', '인용한 근거 목록'));
+        const evUl = el('ul', 'student-explanation-evidence-list');
+        refIds.forEach(id => {
+          const evText = evidenceMap.get(id) || '내용 없음';
+          evUl.appendChild(el('li', null, `${id} — ${evText}`));
+        });
+        container.appendChild(evUl);
+
+        // 3) 적용 규칙 목록 ("규칙 ID — 규칙 글")
+        container.appendChild(el('h5', 'student-explanation-section-title', '적용 규칙 목록'));
+        const rulesList = Array.isArray(event.rules) ? event.rules : [];
+        const ruleUl = el('ul', 'student-explanation-rules-list');
+        rulesList.forEach(rule => {
+          ruleUl.appendChild(el('li', null, `${rule.id} — ${rule.text || '내용 없음'}`));
+        });
+        container.appendChild(ruleUl);
+
+        // 4) event.state에서 unknown인 항목 식별 및 표시 (접속·세션·기기별 확인 불가 표시)
+        container.appendChild(el('h5', 'student-explanation-section-title', '확인 불가 상태 목록'));
+        const stateNames = { access: '접속', session: '세션', device: '기기' };
+        const eventState = event.state || {};
+        const unknownList = Object.keys(stateNames).filter(k => eventState[k] === 'unknown');
+        if (unknownList.length === 0) {
+          container.appendChild(el('p', 'student-explanation-unknown-none', '확인 불가 상태: 없음'));
+        } else {
+          const unkUl = el('ul', 'student-explanation-unknown-list');
+          unknownList.forEach(k => {
+            unkUl.appendChild(el('li', null, `${stateNames[k]}: 확인 불가(unknown)`));
+          });
+          container.appendChild(unkUl);
+          container.appendChild(el('p', 'status-note', '확인할 수 없는 상태는 확인 불가(unknown)이며, 정상 또는 안전으로 판단하지 않습니다.'));
+        }
+
+        // 5) 조치 제안 (proposals)
+        container.appendChild(el('h5', 'student-explanation-section-title', '보안 조치 제안'));
+        const proposals = Array.isArray(expData.proposals) ? expData.proposals : [];
+        const supportedActions = Array.isArray(event.supportedActions) ? event.supportedActions : [];
+        if (proposals.length === 0) {
+          const noPropText = supportedActions.length === 0
+            ? '연동 시스템이 지원하는 조치가 없어 제안이 없습니다(정상).'
+            : 'AI가 제안한 조치가 없습니다.';
+          container.appendChild(el('p', 'student-explanation-no-proposals', noPropText));
+        } else {
+          const propUl = el('ul', 'student-explanation-proposals-list');
+          proposals.forEach(p => {
+            const act = p.action || '알 수 없는 조치';
+            const rsn = p.reason || '사유 정보 없음';
+            propUl.appendChild(el('li', null, `조치: ${act} · 사유: ${rsn} (사람 확인이 필요하며 실행되지 않았습니다)`));
+          });
+          container.appendChild(propUl);
+          container.appendChild(el('p', 'status-note', '사람 확인이 필요하며 실행되지 않았습니다. 설명과 제안만으로 보안 조치가 자동 실행되지는 않습니다.'));
+        }
+
+        // 6) 확인 시각
+        if (checkedAt) {
+          container.appendChild(el('p', 'student-explanation-time', `확인 시각: ${checkedAt}`));
+        }
         return container;
       }
 

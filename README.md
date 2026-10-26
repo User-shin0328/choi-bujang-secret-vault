@@ -612,6 +612,33 @@ npm run xdr:run -- brute-force
 | 19 | 계정 재인증 | 실제 제공 엔진의 재로그인 시각 검증 | 재시험 | 실서버 인증 연동 시험 | **미실행 (0건)** (로컬 계약 외) |
 
 
+## 18단계: 근거에 연결된 AI 보안 이벤트 설명 (bankhar_b)
+
+18단계에서는 `on-client/student/extension.mjs`의 `renderExplanation`을 완성하여 사건의 근거·규칙·상태를 AI 요약과 연계하고 근거 불일치 또는 임의 실행 시 거부하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **오류 우선 처리 및 사건 미선택 안내**:
+   - `explanation.status === 'error'`이면 `event` 유무와 관계없이 안전한 오류 코드·메시지와 실패 사유를 먼저 표시하며, 사건 기록은 그대로 유지됩니다.
+   - `event`가 `null`인 경우 "보안 기록에서 기록을 먼저 고르세요."를 안내합니다.
+2. **근거 바인딩 및 불일치 거부 (`evidence_binding`, `wrong_event_rejected`)**:
+   - `evidenceIds`를 `event.evidence`와 대조하여 일치하는 경우에만 최상위 요소에 `data-student-explanation-event=event.id` 속성을 부여하고 `근거 ID — 근거 글`을 표시합니다.
+   - 사건 기록에 없는 근거 ID가 인용된 경우 설명을 수용하지 않고 거부하며 내용을 지어내지 않습니다.
+3. **확인 불가 상태 식별 (`unknown_evidence`)**:
+   - `event.state` 중 `unknown`인 항목을 접속·세션·기기별로 식별하여 `확인 불가(unknown)`로 분리 표시하며, 정상이나 안전으로 판단하지 않습니다.
+4. **조치 제안 미실행 명시 (`proposal_not_executed`)**:
+   - 제안(`proposals`)이 있는 경우 사람 확인이 필요하며 실행되지 않았음을 명시합니다.
+   - `executed: true`이거나 AI가 이미 실행했다고 보고한 설명은 수용을 거부합니다.
+   - 지원 조치(`supportedActions`)가 없는 경우 연동 시스템 지원 조치 없음으로 인한 정상 상태임을 안내합니다.
+
+### 다시 실행하는 방법
+- 문법 검사: `node --check on-client/student/extension.mjs`
+- 데모 실행:
+  ```powershell
+  cd on-client
+  npm run demo
+  ```
+  브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보안 기록」 메뉴에서 사건을 선택해 연계 설명을 확인합니다.
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
