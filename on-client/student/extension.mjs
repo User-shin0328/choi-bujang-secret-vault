@@ -105,7 +105,14 @@ export function createStudentView() {
 
     renderEvents({ status, mode, data, error } = {}) {
       const container = el('div', 'student-events-view', null, { 'data-student-section': 'events' });
-      container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
+      const modeLabel = MODE_LABELS[mode || 'unknown'] || '확인 불가';
+      const isDemo = mode === 'demo';
+      const sourceTag = isDemo ? '[예시: 설명용 데모 데이터]' : '[실측: 로컬 시스템 측정값]';
+      
+      const badgeWrap = el('div', 'student-mode-badge-wrap');
+      badgeWrap.appendChild(el('span', 'student-mode-badge', `모드: ${modeLabel}`));
+      badgeWrap.appendChild(el('span', `student-source-badge ${isDemo ? 'badge-demo' : 'badge-real'}`, sourceTag));
+      container.appendChild(badgeWrap);
 
       if (!status || status === 'loading') {
         container.appendChild(el('p', 'student-events-loading', '보안 기록을 불러오는 중…'));
@@ -124,8 +131,32 @@ export function createStudentView() {
         return container;
       }
 
+      // 타임라인형: 시각(at) 기준 내림차순(최신순) 정렬
       const sortedEvents = [...eventsList].sort((a, b) => (b.at ? Date.parse(b.at) : 0) - (a.at ? Date.parse(a.at) : 0));
       let currentKindFilter = 'all', currentAppFilter = 'all', currentAccessFilter = 'all', selectedEventId = null;
+
+      // 작전: 기록 타임라인형 - 종류별 거르기 퀵 탭
+      const quickTabs = el('div', 'student-timeline-quick-tabs');
+      const tabOptions = [
+        { label: '전체 기록', val: 'all' },
+        { label: '인증 사건', val: 'auth' },
+        { label: '업무 앱 접근', val: 'access' },
+        { label: 'XDR 경보', val: 'alert' }
+      ];
+      const quickButtons = [];
+      tabOptions.forEach(tab => {
+        const btn = el('button', `btn btn-tab ${tab.val === 'all' ? 'active' : ''}`, tab.label, { type: 'button' });
+        btn.onclick = () => {
+          currentKindFilter = tab.val;
+          kindSelect.value = tab.val;
+          quickButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          updateList();
+        };
+        quickButtons.push(btn);
+        quickTabs.appendChild(btn);
+      });
+      container.appendChild(quickTabs);
 
       const filterBar = el('div', 'student-events-filters');
       const createFilter = (title, ariaLabel, values, labelMap) => {
@@ -148,7 +179,7 @@ export function createStudentView() {
 
       const countP = el('p', 'student-events-count');
       container.appendChild(countP);
-      const listUl = el('ul', 'student-events-list');
+      const listUl = el('ul', 'student-events-list student-timeline-list');
       container.appendChild(listUl);
       const detailDiv = el('div', 'student-event-detail-container');
       container.appendChild(detailDiv);
@@ -216,17 +247,25 @@ export function createStudentView() {
           return true;
         });
 
-        countP.textContent = `조회 건수: ${filtered.length}건 (전체 ${sortedEvents.length}건)`;
+        countP.textContent = `조회 건수: ${filtered.length}건 (전체 ${sortedEvents.length}건 타임라인)`;
         listUl.replaceChildren();
         if (filtered.length === 0) {
-          listUl.appendChild(el('li', 'student-events-empty', '조건에 맞는 기록이 없습니다.'));
+          listUl.appendChild(el('li', 'student-events-empty', '조건에 맞는 타임라인 기록이 없습니다.'));
           return;
         }
 
         for (const ev of filtered) {
-          const li = el('li', 'student-event-item', null, { 'data-student-event-id': ev.id });
+          const li = el('li', 'student-event-item student-timeline-item', null, { 'data-student-event-id': ev.id });
           const kindText = EVENT_KIND_LABELS[ev.kind] || ev.kind;
-          li.appendChild(el('span', 'student-event-text', `[${ev.id}] ${ev.at || ''} · ${kindText} (${ev.kind}) · 앱: ${ev.appId || '앱을 확인할 수 없음'} · 요약: ${ev.summary || '요약 없음'}`));
+          
+          // 타임라인 시각 배지와 출처 배지
+          const timeBadge = el('span', 'student-timeline-time', `[시간] ${ev.at || '시각 미상'}`);
+          const itemSource = el('span', `student-item-source ${isDemo ? 'tag-demo' : 'tag-real'}`, isDemo ? '[예시]' : '[실측]');
+          const summaryText = el('span', 'student-event-text', `[${ev.id}] · ${kindText} (${ev.kind}) · 앱: ${ev.appId || '앱을 확인할 수 없음'} · 요약: ${ev.summary || '요약 없음'}`);
+
+          li.appendChild(timeBadge);
+          li.appendChild(itemSource);
+          li.appendChild(summaryText);
 
           const detailBtn = el('button', 'student-detail-btn btn', `${ev.id} 상세`, { type: 'button', 'aria-label': `${ev.id} 상세` });
           detailBtn.onclick = () => { selectedEventId = (selectedEventId === ev.id) ? null : ev.id; renderDetailSection(); };
@@ -235,7 +274,20 @@ export function createStudentView() {
         }
       }
 
-      kindSelect.onchange = e => { currentKindFilter = e.target.value; updateList(); };
+      kindSelect.onchange = e => {
+        currentKindFilter = e.target.value;
+        quickButtons.forEach(b => {
+          if ((b.textContent.includes('전체') && e.target.value === 'all') ||
+              (b.textContent.includes('인증') && e.target.value === 'auth') ||
+              (b.textContent.includes('접근') && e.target.value === 'access') ||
+              (b.textContent.includes('경보') && e.target.value === 'alert')) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+        updateList();
+      };
       appSelect.onchange = e => { currentAppFilter = e.target.value; updateList(); };
       accessSelect.onchange = e => { currentAccessFilter = e.target.value; updateList(); };
       updateList();

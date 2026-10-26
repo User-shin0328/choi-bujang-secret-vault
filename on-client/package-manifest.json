@@ -1,0 +1,29 @@
+{
+  "name": "bankhar_b",
+  "version": "v0.9.0-rc",
+  "packageType": "basic-package",
+  "entry": "src/server.mjs",
+  "launcher": "run-bankhar-b.bat",
+  "measuredRuntime": {
+    "node": "v24.19.0",
+    "platform": "win32",
+    "arch": "x64",
+    "port": 5189,
+    "timestamp": "2026-10-26T06:36:39.506Z"
+  },
+  "dataDistinction": {
+    "measured": [
+      "Node.js 런타임",
+      "로컬 웹서버 포트(5189)",
+      "무결성 검사 코드",
+      "SQLite 조치 저장소"
+    ],
+    "demonstration": [
+      "사용자 및 기기 식별자",
+      "업무 앱 인가 판정 결과",
+      "최근 보안 사건 40건",
+      "OSV 취약점 목록",
+      "AI 사건 추론 설명"
+    ]
+  }
+}
