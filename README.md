@@ -673,6 +673,41 @@ npm run xdr:run -- brute-force
   ```
   브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보안 기록」 메뉴의 사건에서 조치 상태 및 실제 결과 표시를 확인합니다.
 
+## 20단계: 설치 패키지 버전과 알려진 취약점 조회 결과 (bankhar_b)
+
+20단계에서는 `on-client/student/extension.mjs`의 `renderVulnerabilities`를 완성하여 `package-lock.json` 기반의 정확한 설치 버전과 OSV 취약점 조회 결과를 대조 표시하고, 미조회·일부 실패·오류 상태를 엄격히 분리하도록 구현했습니다.
+
+### 현재 작동하는 기능
+1. **요청 진행 상태 엄격 분리 (`stale_response_blocked`, `request_recovery`)**:
+   - `idle`: "상태: 조회 전 (idle)" — 이전 결과를 남기지 않고 조회 전 상태 표시
+   - `loading`: "상태: 조회 중 (loading)" — 조회 중 상태 안내 및 이전 결과 잔존 차단
+   - `error`: "상태: 조회 실패 (error) [코드]" — 안전한 오류 코드·메시지 표시 및 조회 실패가 "취약점 없음"이 아님을 명시
+2. **전체 조회 상태(`data.status`) 원래 값 및 한국어 설명 (`lookup_unavailable`)**:
+   - `complete`: "모두 조회 (complete)"
+   - `partial`: "일부 조회 실패 (partial)" — 이미 수신된 취약점 결과는 유지
+   - `not_checked`: "아직 조회 안 함 (not_checked)" — 승인된 공개 패키지 없음 등 미조회 상태
+   - `not_configured`: "조회 준비 미완료 (not_configured)" — 프로젝트 설정 필요
+   - `unverifiable`: "lock 파일 확인 불가 (unverifiable)" — lockfile 확인 불가
+3. **정확한 버전 및 패키지 메타데이터 표시 (`exact_lock_version`, `osv_match`)**:
+   - 버전 범위(`^1.2.0`)가 아닌 `package-lock.json`과 설치 메타데이터의 정확한 semver 버전 표시
+   - 각 행 요소(`tr`)에 `data-student-package-name=pkg.name`, `data-student-package-version=pkg.version` 속성 지정
+   - 전체 잠금 파일 버전(`lockfileVersion`), 잠금 파일 해시(`lockfileHash`), 조회 시각(`checkedAt`), 제외 건수 표시
+4. **취약점 및 미발견/부분 실패 구분 (`no_results_distinction`, `partial_preservation`)**:
+   - `known_vulnerabilities`: "알려진 항목 있음 (known_vulnerabilities)" 및 취약점 식별자(`id`), 수정 시각(`modified`) 표시
+   - `none_found`: "알려진 항목 없음 (none_found)" — 조회 범위 내에서 알려진 취약점이 없음을 명시 (전체 시스템의 절대적 안전 보장이 아님을 안내)
+   - `unverifiable`: "조회 확인 불가 (unverifiable)" — 단, 기존 취약점 목록이 존재하는 경우 "일부 확인·전체 조회 확인 불가 (unverifiable)"로 표시하고 수신된 식별자를 유지
+5. **DOM 생성 안전성 (`refresh_replaces`)**:
+   - `createElement`와 `textContent`만을 사용하여 안전하게 DOM을 생성하고 매 호출마다 새로운 요소를 반환
+
+### 다시 실행하는 방법
+- 문법 검사: `node --check on-client/student/extension.mjs`
+- 데모 실행:
+  ```powershell
+  cd on-client
+  npm run demo
+  ```
+  브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보호 현황」 메뉴의 패키지 조회 영역에서 조회 결과 및 학생 표시를 확인합니다.
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.

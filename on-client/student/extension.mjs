@@ -348,7 +348,127 @@ export function createStudentView() {
       return container;
     },
 
-    renderVulnerabilities() { return '학생 구현 대기: 정확한 설치 버전·OSV 출처·조회 시각·부분 결과·조회 실패를 구분하세요.'; },
+    renderVulnerabilities({ status, mode, data, error } = {}) {
+      const curStatus = status || 'idle';
+      const container = el('div', 'student-vulnerabilities-view', null, {
+        'data-student-section': 'vulnerabilities',
+        'data-student-vulnerabilities-status': curStatus,
+      });
+
+      container.appendChild(el('h4', 'student-vulnerabilities-title', '설치 패키지 버전 및 알려진 취약점(OSV) 조회'));
+
+      if (curStatus === 'idle') {
+        container.appendChild(el('p', 'student-vulnerabilities-status-text status-idle', '상태: 조회 전 (idle)'));
+        container.appendChild(el('p', 'status-note', '아직 패키지 취약점 조회를 실행하지 않았습니다.'));
+        return container;
+      }
+
+      if (curStatus === 'loading') {
+        container.appendChild(el('p', 'student-vulnerabilities-status-text status-loading', '상태: 조회 중 (loading)'));
+        container.appendChild(el('p', 'status-note', '설치된 패키지의 메타데이터와 OSV 데이터베이스를 대조하고 있습니다. (완료 아님)'));
+        return container;
+      }
+
+      if (curStatus === 'error') {
+        const safeCode = error?.code || 'ERROR';
+        const safeMsg = error?.message || '패키지 조회를 확인할 수 없습니다.';
+        container.appendChild(el('p', 'student-vulnerabilities-status-text status-error status-alert', `상태: 조회 실패 (error) [${safeCode}]`));
+        container.appendChild(el('p', 'status-note', `오류 내용: ${safeMsg}`));
+        container.appendChild(el('p', 'status-note', '조회 실패는 "취약점 없음"이 아닙니다. 이전 결과를 정상으로 표시하지 않습니다.'));
+        return container;
+      }
+
+      // curStatus === 'ok'
+      const scanData = data || {};
+      const scanStatus = scanData.status || 'not_checked';
+      container.setAttribute('data-student-scan-status', scanStatus);
+
+      const SCAN_STATUS_MAP = {
+        complete: { label: '모두 조회 (complete)', note: '모든 대상 패키지의 조회가 완료되었습니다.' },
+        partial: { label: '일부 조회 실패 (partial)', note: '일부 패키지의 조회를 확인할 수 없습니다. 이미 수신된 결과는 유지됩니다.' },
+        not_checked: { label: '아직 조회 안 함 (not_checked)', note: '승인된 공개 패키지가 없거나 아직 조회를 실행하지 않았습니다. (미조회)' },
+        not_configured: { label: '조회 준비 미완료 (not_configured)', note: '조회 대상 프로젝트 설정이 필요합니다.' },
+        unverifiable: { label: 'lock 파일 확인 불가 (unverifiable)', note: 'package-lock.json 파일을 확인할 수 없습니다.' },
+      };
+
+      const scanInfo = SCAN_STATUS_MAP[scanStatus] || { label: `${scanStatus}`, note: '확인 불가' };
+      container.appendChild(el('p', `student-scan-status-text status-${scanStatus}`, `전체 조회 상태: ${scanInfo.label}`));
+      container.appendChild(el('p', 'status-note', scanInfo.note));
+
+      // 메타데이터 요약
+      const metaUl = el('ul', 'student-vulnerabilities-meta');
+      if (scanData.lockfileVersion != null) metaUl.appendChild(el('li', null, `잠금 파일 버전: ${scanData.lockfileVersion}`));
+      if (scanData.lockfileHash) metaUl.appendChild(el('li', null, `잠금 파일 해시: ${scanData.lockfileHash}`));
+      if (scanData.checkedAt) metaUl.appendChild(el('li', null, `조회 시각: ${scanData.checkedAt}`));
+      if (scanData.excluded?.count != null) metaUl.appendChild(el('li', null, `조회 제외 패키지: ${scanData.excluded.count}건`));
+      if (metaUl.children.length > 0) container.appendChild(metaUl);
+
+      const packages = Array.isArray(scanData.packages) ? scanData.packages : [];
+
+      if (packages.length === 0) {
+        if (scanStatus === 'not_configured') {
+          container.appendChild(el('p', 'student-empty-note', '조회 대상 프로젝트 설정이 필요하여 표시할 패키지가 없습니다.'));
+        } else if (scanStatus === 'not_checked') {
+          container.appendChild(el('p', 'student-empty-note', '승인된 공개 패키지 대상이 없어 표시할 패키지가 없습니다.'));
+        } else if (scanStatus === 'unverifiable') {
+          container.appendChild(el('p', 'student-empty-note', '잠금 파일을 확인할 수 없어 패키지 목록을 표시할 수 없습니다.'));
+        } else {
+          container.appendChild(el('p', 'student-empty-note', '표시할 패키지 조회 결과가 없습니다.'));
+        }
+        return container;
+      }
+
+      // 테이블 렌더링
+      const table = el('table', 'student-package-table');
+      const thead = el('thead');
+      const headerRow = el('tr');
+      ['패키지', '설치 버전', '조회 상태', '취약점 식별자', '수정 시각', '출처', '조회 시각'].forEach(h => {
+        headerRow.appendChild(el('th', null, h));
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = el('tbody');
+      for (const pkg of packages) {
+        let pkgStatusLabel = '';
+        if (pkg.status === 'known_vulnerabilities') {
+          pkgStatusLabel = '알려진 항목 있음 (known_vulnerabilities)';
+        } else if (pkg.status === 'none_found') {
+          pkgStatusLabel = '알려진 항목 없음 (none_found)';
+        } else if (pkg.status === 'unverifiable') {
+          pkgStatusLabel = (Array.isArray(pkg.vulnerabilities) && pkg.vulnerabilities.length > 0)
+            ? '일부 확인·전체 조회 확인 불가 (unverifiable)'
+            : '조회 확인 불가 (unverifiable)';
+        } else {
+          pkgStatusLabel = pkg.status || '확인 불가';
+        }
+
+        const findings = (Array.isArray(pkg.vulnerabilities) && pkg.vulnerabilities.length > 0)
+          ? pkg.vulnerabilities
+          : [null];
+
+        for (const finding of findings) {
+          const row = el('tr', 'student-package-row', null, {
+            'data-student-package-name': pkg.name || '',
+            'data-student-package-version': pkg.version || ''
+          });
+
+          row.appendChild(el('td', 'pkg-name', pkg.name || ''));
+          row.appendChild(el('td', 'pkg-version', pkg.version || ''));
+          row.appendChild(el('td', 'pkg-status', pkgStatusLabel));
+          row.appendChild(el('td', 'pkg-vuln-id', finding ? finding.id : ''));
+          row.appendChild(el('td', 'pkg-vuln-modified', finding ? finding.modified : ''));
+          row.appendChild(el('td', 'pkg-source', pkg.source || ''));
+          row.appendChild(el('td', 'pkg-checked-at', pkg.checkedAt || ''));
+          tbody.appendChild(row);
+        }
+      }
+      table.appendChild(tbody);
+      container.appendChild(table);
+
+      container.appendChild(el('p', 'status-note', 'OSV 조회 결과는 알려진 항목만을 대조한 것이며, none_found가 시스템 전체나 패키지의 절대적 안전을 보장하지 않습니다.'));
+      return container;
+    },
 
     renderAiConnection({ status, mode, data, error, checkedAt, explanationAccepted } = {}) {
       const container = el('div', 'student-ai-connection-view', null, { 'data-student-section': 'ai-connection' });
