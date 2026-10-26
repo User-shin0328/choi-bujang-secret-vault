@@ -708,6 +708,34 @@ npm run xdr:run -- brute-force
   ```
   브라우저에서 `http://127.0.0.1:5189`에 접속한 뒤 「보호 현황」 메뉴의 패키지 조회 영역에서 조회 결과 및 학생 표시를 확인합니다.
 
+## 21단계: 학생용 실행 설명서와 시스템 구성도 (bankhar_b)
+
+21단계에서는 제3자가 실제 작업 환경에서 프로젝트를 실행하고 구조를 파악할 수 있도록 학생용 실행 설명서([docs/STUDENT_RUNBOOK.md](docs/STUDENT_RUNBOOK.md))를 새로 작성하고 시스템 구성도(Mermaid + 텍스트) 및 모듈 경계를 체계화했습니다.
+
+### 현재 작동하는 기능
+1. **실행 설명서(Runbook) 작성 (`run_instructions`)**:
+   - `docs/STUDENT_RUNBOOK.md`를 신규 생성하여 검증된 Node.js 버전(`v24.19.0`), npm 버전(`11.17.0`), 무의존성 환경, PowerShell 실행 위치, 실행 명령(`npm run demo` / `npm start`), 포트(`5189`), 정상 시작 신호, 종료(`Ctrl + C`) 및 재실행 순서를 명시했습니다.
+2. **4개 계층 시스템 아키텍처 및 구성도 (`architecture`)**:
+   - 브라우저(127.0.0.1:5189) → 로컬 앱 서버(`server.mjs`) → 접근 제어 및 XDR(`decider.mjs`, `detect.mjs`) / 수업용 AI 게이트웨이(`clco-http.mjs`)의 상호작용 관계를 Mermaid 다이어그램과 표 형식의 글로 표현했습니다.
+   - 구성도의 각 상자마다 실제 소스 파일 경로와 공개 가능한 로컬 주소를 명시했습니다.
+3. **제공 코드와 학생 구현 영역 경계 명시 (`provided_student_boundary`)**:
+   - 제공 코드(`on-client/src/*`, `public/*`, `vendor/*`)와 학생 구현 코드(`on-client/student/extension.mjs`, `engine-adapter.mjs`)의 경계를 표로 구분했습니다.
+   - 학생 구현 함수(`renderIdentity` ~ `renderVulnerabilities`) 7종의 역할과 단계를 설명서에 정리했습니다.
+4. **장애 상황 및 오류별 해결 안내 (`failure_guide`)**:
+   - 연결 없음(`disconnected`), 권한 준비 중/확인 불가(`UNV`), 조회 준비 미완료(`not_configured`), lock 파일 확인 불가(`unverifiable`), 처리 중(`pending`), 시간 초과(`TIMEOUT`) 등 화면에 나타나는 실제 문구별 원인과 확인 순서를 표로 기술했습니다.
+5. **지원 범위 및 기다림(UNV) 목록 분리**:
+   - 실제 확인된 로컬 검증 항목과 심판/운영 측 권한 부여 대기(AI 모델 호출, 실제 SDP 조치 원천 집행, 라이브 OSV API) 항목을 분리하여 정직하게 기록했습니다.
+
+### 다시 실행하는 방법
+- 문법 검사: `node --check on-client/student/extension.mjs`
+- 실행 설명서 확인: `docs/STUDENT_RUNBOOK.md`
+- 데모 실행:
+  ```powershell
+  cd on-client
+  npm run demo
+  ```
+  브라우저에서 `http://127.0.0.1:5189`에 접속하여 전체 대시보드 및 학생 렌더링 영역을 확인합니다.
+
 ## 다음 단계의 코딩 도구에 전달할 규칙
 
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
