@@ -52,9 +52,10 @@ sktaleph2/
 ## 3. 실행 절차 (Runbook)
 
 ### 3.1. PowerShell 실행 위치
-새 PowerShell 창을 열고 프로젝트의 `on-client` 디렉토리로 이동합니다:
+저장소를 복제한 최상위 폴더(프로젝트 루트)에서 새 PowerShell 창을 열고, 상대 경로를 통해 `on-client` 디렉토리로 이동합니다:
 ```powershell
-cd c:\Users\User\Desktop\sktaleph2\on-client
+# 저장소를 복제한 최상위 디렉토리(루트)에서 상대 경로로 이동
+cd on-client
 ```
 
 ### 3.2. 문법 및 구현 검사
