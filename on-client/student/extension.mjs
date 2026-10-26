@@ -32,6 +32,10 @@ const el = (tag, cls, text, attrs) => {
   return node;
 };
 
+// PC 상태 점검 기록 타임라인 및 추이 비교를 위한 스냅샷 저장소
+const pcStatusHistory = [];
+let pcStatusFilter = 'all'; // 'all' | 'real' | 'demo'
+
 export function createStudentView() {
   return {
     renderIdentity({ me, devices, sessions } = {}) {
@@ -344,6 +348,277 @@ export function createStudentView() {
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
+      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em 적절히 확장)
+      const statusStyle = el('style', null, `
+        .pc-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
+        .pc-resource-card {
+          padding: 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+          background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .pc-resource-card h4 { margin: 0 0 10px; font-size: 1rem; color: #2357c6; display: flex; align-items: center; justify-content: space-between; }
+        .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; }
+        .pc-badge-tag.real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
+        .pc-badge-tag.demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
+        .pc-badge-tag.unv { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .pc-unv-reason { font-size: 0.85rem; color: #b91c1c; background: #fff5f5; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
+        .pc-timeline-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; padding: 0; list-style: none; }
+        .pc-timeline-item {
+          padding: 14px 18px; border: 1px solid var(--border, #d9dde3); border-left: 5px solid #2357c6;
+          border-radius: 8px; background: #ffffff; line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .pc-timeline-header { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+        .pc-timeline-time { padding: 4px 10px; font-size: 0.85rem; font-weight: 700; background: #e7eefc; color: #2357c6; border-radius: 6px; }
+        .pc-trend-badge { padding: 3px 8px; font-size: 0.8rem; font-weight: 600; border-radius: 4px; }
+        .pc-trend-up { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
+        .pc-trend-down { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+        .pc-trend-same { background: #f5f5f5; color: #595959; border: 1px solid #d9d9d9; }
+        .pc-timeline-tabs { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+        .pc-timeline-tabs button {
+          padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 18px;
+          border: 1px solid #d9dde3; background: #ffffff; cursor: pointer; transition: all 0.15s ease;
+        }
+        .pc-timeline-tabs button.active { background: #2357c6; color: #ffffff; border-color: #2357c6; }
+      `);
+      container.appendChild(statusStyle);
+
+      // 잰 시각 및 일반 권한 실측 데이터 수집
+      const now = new Date();
+      const measuredTime = now.toLocaleTimeString('ko-KR', { hour12: false });
+      const measuredIso = now.toISOString();
+
+      // 1. CPU (일반 권한 실측: navigator.hardwareConcurrency)
+      const hardwareCores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : null;
+
+      // 2. Memory (일반 권한 실측: performance.memory)
+      let jsHeapUsedMB = null;
+      let jsHeapTotalMB = null;
+      if (typeof performance !== 'undefined' && performance.memory) {
+        jsHeapUsedMB = Number((performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(1));
+        jsHeapTotalMB = Number((performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(1));
+      }
+
+      // 3. Storage estimate (비동기 스토리지 실측)
+      if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.estimate === 'function' && typeof window !== 'undefined' && !window._lastStorageEstimate) {
+        navigator.storage.estimate().then(est => {
+          window._lastStorageEstimate = {
+            usedMB: (est.usage / (1024 * 1024)).toFixed(1),
+            quotaMB: (est.quota / (1024 * 1024)).toFixed(1),
+            time: new Date().toLocaleTimeString('ko-KR', { hour12: false })
+          };
+        }).catch(() => {});
+      }
+      const storageEstimate = (typeof window !== 'undefined' && window._lastStorageEstimate) || null;
+
+      // 스냅샷 객체 생성 및 타임라인 기록 누적 (최신순 unshift)
+      const currentSnapshot = {
+        id: `snap-${Date.now()}`,
+        time: measuredTime,
+        iso: measuredIso,
+        cpuCores: hardwareCores,
+        jsHeapMB: jsHeapUsedMB,
+        storageUsedMB: storageEstimate ? storageEstimate.usedMB : null,
+        demoCpuPercent: 24.5,
+        demoMemoryMB: 8420,
+        demoMemoryTotalMB: 16384,
+        demoDiskGB: 142.8,
+        demoDiskTotalGB: 512.0,
+        deviceStatus: devices?.data?.[0]?.status || 'unknown'
+      };
+
+      if (pcStatusHistory.length === 0 || (Date.now() - (pcStatusHistory[0]._ts || 0)) > 1500) {
+        currentSnapshot._ts = Date.now();
+        pcStatusHistory.unshift(currentSnapshot);
+        if (pcStatusHistory.length > 20) pcStatusHistory.pop();
+      }
+
+      // 직전 대비 추이(Trend) 계산
+      let heapTrendText = '직전 기록 없음 (첫 측정 기준점)';
+      let heapTrendClass = 'pc-trend-same';
+      if (pcStatusHistory.length >= 2 && pcStatusHistory[0].jsHeapMB !== null && pcStatusHistory[1].jsHeapMB !== null) {
+        const diff = Number((pcStatusHistory[0].jsHeapMB - pcStatusHistory[1].jsHeapMB).toFixed(1));
+        if (diff > 0) {
+          heapTrendText = `▲ +${diff} MB 증가 (직전: ${pcStatusHistory[1].jsHeapMB} MB → 현재: ${pcStatusHistory[0].jsHeapMB} MB)`;
+          heapTrendClass = 'pc-trend-up';
+        } else if (diff < 0) {
+          heapTrendText = `▼ ${diff} MB 감소 (직전: ${pcStatusHistory[1].jsHeapMB} MB → 현재: ${pcStatusHistory[0].jsHeapMB} MB)`;
+          heapTrendClass = 'pc-trend-down';
+        } else {
+          heapTrendText = `━ ${pcStatusHistory[0].jsHeapMB} MB 유지 (변화 없음)`;
+          heapTrendClass = 'pc-trend-same';
+        }
+      }
+
+      // ======================================================================
+      // 1. 내 PC 자원 상태 (일반 권한 실측 및 확인 불가 사유)
+      // ======================================================================
+      const pcSection = el('section', 'student-status-card');
+      pcSection.appendChild(el('h3', null, '내 PC 자원 상태 (일반 권한 실측 및 확인 불가 사유)'));
+      pcSection.appendChild(el('p', 'status-note', '관리자 권한 없이 일반 권한으로 읽은 실측값과, 브라우저 샌드박스 정책상 조회가 불가능한 항목의 사유를 명확히 구분하여 보여줍니다.'));
+
+      const grid = el('div', 'pc-resource-grid');
+
+      // (1) CPU 카드
+      const cpuCard = el('div', 'pc-resource-card');
+      cpuCard.appendChild(el('h4', null, 'CPU 상태'));
+      const cpuUl = el('ul', 'plain-list');
+      if (hardwareCores) {
+        const li = el('li', null, `• 논리 CPU 코어 수: ${hardwareCores} Cores [잰 시각: ${measuredTime}, 단위: Cores]`);
+        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+        cpuUl.appendChild(li);
+      }
+      const cpuUnvLi = el('li', null, `• 전체 CPU 사용률: 「확인 불가」 [단위: %]`);
+      cpuUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      cpuUl.appendChild(cpuUnvLi);
+      cpuUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 OS 전체 CPU 점유율 직접 조회가 차단되어 있습니다.'));
+      
+      const cpuDemoLi = el('li', null, `• 설명용 데모 예시값: 24.5% [잰 시각: 2026-10-26 17:30:00, 단위: %]`);
+      cpuDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      cpuUl.appendChild(cpuDemoLi);
+      cpuCard.appendChild(cpuUl);
+      grid.appendChild(cpuCard);
+
+      // (2) 메모리 카드
+      const memCard = el('div', 'pc-resource-card');
+      memCard.appendChild(el('h4', null, '메모리 상태'));
+      const memUl = el('ul', 'plain-list');
+      if (jsHeapUsedMB !== null) {
+        const li = el('li', null, `• 브라우저 JS 힙 사용량: ${jsHeapUsedMB} MB / ${jsHeapTotalMB} MB [잰 시각: ${measuredTime}, 단위: MB]`);
+        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+        memUl.appendChild(li);
+      } else {
+        const li = el('li', null, `• 브라우저 JS 힙 메모리: 「확인 불가」 [단위: MB]`);
+        li.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+        memUl.appendChild(li);
+        memUl.appendChild(el('div', 'pc-unv-reason', '이유: 현재 브라우저가 performance.memory API를 지원하지 않거나 보안상 비활성화되어 있습니다.'));
+      }
+      const memUnvLi = el('li', null, `• OS 전체 물리 RAM: 「확인 불가」 [단위: MB]`);
+      memUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      memUl.appendChild(memUnvLi);
+      memUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 환경에서는 시스템 전체 물리 메모리 크기 및 점유량을 직접 읽을 수 있는 권한이 없습니다.'));
+
+      const memDemoLi = el('li', null, `• 설명용 데모 예시값: 8,420 MB / 16,384 MB (51.4%) [잰 시각: 2026-10-26 17:30:00, 단위: MB]`);
+      memDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      memUl.appendChild(memDemoLi);
+      memCard.appendChild(memUl);
+      grid.appendChild(memCard);
+
+      // (3) 디스크 카드
+      const diskCard = el('div', 'pc-resource-card');
+      diskCard.appendChild(el('h4', null, '디스크 상태'));
+      const diskUl = el('ul', 'plain-list');
+      if (storageEstimate) {
+        const li = el('li', null, `• 브라우저 스토리지: ${storageEstimate.usedMB} MB 사용 / ${storageEstimate.quotaMB} MB 할당 [잰 시각: ${storageEstimate.time}, 단위: MB]`);
+        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+        diskUl.appendChild(li);
+      } else {
+        const li = el('li', null, `• 브라우저 스토리지 사용량: 측정 준비 중 [단위: MB]`);
+        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 조회 대기]'));
+        diskUl.appendChild(li);
+      }
+      const diskUnvLi = el('li', null, `• OS 전체 디스크 남은 공간: 「확인 불가」 [단위: GB]`);
+      diskUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      diskUl.appendChild(diskUnvLi);
+      diskUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 사용자 권한 웹 페이지에서는 호스트 OS의 C 드라이브 등 파일시스템 전체 잔여 공간 조회가 금지되어 있습니다.'));
+
+      const diskDemoLi = el('li', null, `• 설명용 데모 예시값: 142.8 GB / 512.0 GB 남음 (27.9% 여유) [잰 시각: 2026-10-26 17:30:00, 단위: GB]`);
+      diskDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      diskUl.appendChild(diskDemoLi);
+      diskCard.appendChild(diskUl);
+      grid.appendChild(diskCard);
+
+      pcSection.appendChild(grid);
+      container.appendChild(pcSection);
+
+      // ======================================================================
+      // 2. PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교
+      // ======================================================================
+      const timelineSection = el('section', 'student-status-card');
+      timelineSection.appendChild(el('h3', null, 'PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교'));
+      timelineSection.appendChild(el('p', 'status-note', '조회 시각 순서대로 기록된 스냅샷 타임라인과 직전 점검 대비 자원/상태 추이 비교 및 설명을 제공합니다.'));
+
+      // 퀵 필터 탭
+      const filterWrap = el('div', 'pc-timeline-tabs');
+      const tabs = [
+        { id: 'all', label: '전체 점검 기록' },
+        { id: 'real', label: '실측값 기록만' },
+        { id: 'demo', label: '예시값 비교 기록' }
+      ];
+      const listContainer = el('ul', 'pc-timeline-list');
+
+      function renderTimelineList() {
+        listContainer.innerHTML = '';
+        const filtered = pcStatusHistory.filter(item => {
+          if (pcStatusFilter === 'real') return item.cpuCores !== null || item.jsHeapMB !== null;
+          if (pcStatusFilter === 'demo') return true;
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          listContainer.appendChild(el('li', 'status-empty', '표시할 점검 기록이 없습니다.'));
+          return;
+        }
+
+        filtered.forEach((snap, idx) => {
+          const item = el('li', 'pc-timeline-item');
+          const header = el('div', 'pc-timeline-header');
+          header.appendChild(el('span', 'pc-timeline-time', `[점검 시각: ${snap.time}]`));
+          
+          if (pcStatusFilter === 'demo') {
+            header.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+          } else {
+            header.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
+          }
+
+          if (idx === 0) {
+            header.appendChild(el('span', `pc-trend-badge ${heapTrendClass}`, `메모리 추이: ${heapTrendText}`));
+          }
+          item.appendChild(header);
+
+          const desc = el('div', null);
+          if (pcStatusFilter === 'demo') {
+            desc.innerHTML = `
+              <strong>• [예시] CPU 사용률:</strong> ${snap.demoCpuPercent}% (정상 범위) · 
+              <strong>• [예시] RAM 사용량:</strong> ${snap.demoMemoryMB} MB / ${snap.demoMemoryTotalMB} MB · 
+              <strong>• [예시] 디스크 남은 공간:</strong> ${snap.demoDiskGB} GB 여유<br>
+              <small class="muted" style="color: #8c8c8c;">※ 설명용 가상 예시 데이터이며, 실제 호스트 시스템 자원 측정값이 아닙니다.</small>
+            `;
+          } else {
+            const coresText = snap.cpuCores ? `${snap.cpuCores} Cores 실측` : '코어 확인 불가';
+            const heapText = snap.jsHeapMB ? `${snap.jsHeapMB} MB 실측` : '힙 확인 불가';
+            const devText = snap.deviceStatus === 'compliant' ? '보안 기준 충족(정상)' : snap.deviceStatus;
+            desc.innerHTML = `
+              <strong>• 실측 CPU 코어:</strong> ${coresText} · 
+              <strong>• 실측 JS 힙 메모리:</strong> ${heapText} · 
+              <strong>• 기기 보안 상태:</strong> ${devText}<br>
+              <strong>• 추이 비교 분석 및 상태 설명:</strong> ${idx === 0 ? heapTrendText : '이전 측정 기록'} (브라우저 일반 권한 보안 샌드박스 내 안정적 작동 중)
+            `;
+          }
+          item.appendChild(desc);
+          listContainer.appendChild(item);
+        });
+      }
+
+      tabs.forEach(tab => {
+        const btn = el('button', tab.id === pcStatusFilter ? 'active' : null, tab.label, { type: 'button' });
+        btn.onclick = () => {
+          pcStatusFilter = tab.id;
+          filterWrap.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderTimelineList();
+        };
+        filterWrap.appendChild(btn);
+      });
+
+      timelineSection.appendChild(filterWrap);
+      timelineSection.appendChild(listContainer);
+      renderTimelineList();
+      container.appendChild(timelineSection);
+
+      // ======================================================================
+      // 3. 기존 알림 상태 (보존)
+      // ======================================================================
       const notifSection = el('section', 'student-status-card');
       notifSection.appendChild(el('h3', null, '알림 상태'));
       const notifList = Array.isArray(notifications) ? notifications : [];
@@ -355,6 +630,9 @@ export function createStudentView() {
       }
       container.appendChild(notifSection);
 
+      // ======================================================================
+      // 4. 기존 기기 점검 상태 (보존)
+      // ======================================================================
       const devSection = el('section', 'student-status-card');
       devSection.appendChild(el('h3', null, '기기 점검 상태'));
       if (!devices || devices.status === 'loading') devSection.appendChild(el('p', 'status-loading', '기기 목록을 불러오는 중…'));
@@ -376,6 +654,9 @@ export function createStudentView() {
       }
       container.appendChild(devSection);
 
+      // ======================================================================
+      // 5. 기존 세션 점검 상태 (보존)
+      // ======================================================================
       const sessSection = el('section', 'student-status-card');
       sessSection.appendChild(el('h3', null, '세션 점검 상태'));
       sessSection.appendChild(el('p', 'status-note', '세션은 지금 검증된 연결 하나만 조회됩니다. (지난 세션 목록이 아님)'));
@@ -398,6 +679,9 @@ export function createStudentView() {
       }
       container.appendChild(sessSection);
 
+      // ======================================================================
+      // 6. 기존 도움정보 (진단 정보) (보존)
+      // ======================================================================
       const diagSection = el('section', 'student-status-card');
       diagSection.appendChild(el('h3', null, '도움정보 (진단 정보)'));
       if (!diagnostics || diagnostics.status === 'idle') diagSection.appendChild(el('p', 'status-empty', '도움정보가 아직 조회되지 않았습니다. 제공 화면의 「도움정보 불러오기」를 누르세요.'));
