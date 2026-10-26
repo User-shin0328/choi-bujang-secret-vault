@@ -90,52 +90,65 @@ npm run demo
 ## 4. 시스템 아키텍처 및 구성도
 
 ```mermaid
-flowchart LR
-    subgraph Browser ["1. 사용자 브라우저 (Chrome / Edge)"]
+flowchart TD
+    subgraph Browser ["1. 사용자 브라우저 (Chrome / Edge, http://127.0.0.1:5189)"]
         UI["제공 대시보드 UI<br/>(public/index.html & app.js)"]
-        SV["학생 렌더링 화면<br/>(student/extension.mjs)"]
+        SV["학생 화면 렌더러 8종<br/>(student/extension.mjs)"]
         UI <--> SV
     end
 
-    subgraph LocalServer ["2. 로컬 앱 서버 (Node.js 24)"]
-        SRV["HTTP 서버 (포트 5189)<br/>(src/server.mjs)"]
-        ENG["보안 엔진 브리지<br/>(src/engine.mjs)"]
+    subgraph LocalAppServer ["2. on-client 로컬 앱 서버 (Node.js 24, src/server.mjs)"]
+        SRV["HTTP 서버 라우팅 (포트 5189)<br/>(src/server.mjs)"]
+        ENG["엔진 브리지<br/>(src/engine.mjs)"]
+        SDP["SDP 호스트 엔진<br/>(src/engine/sdp-host.mjs)"]
+        ACT["조치 서비스<br/>(src/actions/service.mjs)"]
+        VULN["취약점 스캔 서비스<br/>(src/vulnerabilities/project-scan.mjs)"]
+        AISVC["AI 서비스 모듈<br/>(src/ai/service.mjs)"]
         ADPT["학생 엔진 어댑터<br/>(student/engine-adapter.mjs)"]
+
         SRV <--> ENG
+        SRV <--> SDP
+        SRV <--> ACT
+        SRV <--> VULN
+        SRV <--> AISVC
         ENG <--> ADPT
     end
 
-    subgraph DefenseXDR ["3. 접근 제어 및 XDR 시스템"]
-        DEC["정책 판정기<br/>(src/decider.mjs)"]
-        DET["위협 탐지기<br/>(src/detect.mjs)"]
-        AUTH["인증 / 원천 API<br/>(aleph.config.json)"]
-    end
-
-    subgraph AIGateway ["4. 수업용 AI 게이트웨이"]
-        AISVC["AI 서비스 모듈<br/>(src/ai/service.mjs)"]
+    subgraph ExternalAI ["3. 외부 수업용 AI 게이트웨이"]
         HTTP["HTTP 전송기<br/>(vendor/clco-http.mjs)"]
         GATEWAY["CLCO AI Gateway<br/>(/chat, /connection)"]
         AISVC <--> HTTP
         HTTP <--> GATEWAY
     end
 
-    Browser <-->|HTTP REST 127.0.0.1:5189| LocalServer
-    LocalServer <-->|내부 모듈 / REST| DefenseXDR
-    LocalServer <-->|Bearer 앱 토큰 통신| AIGateway
+    subgraph IndependentRoot ["4. [독립 모듈] 루트 서버 방어전 & XDR 랩 (on-client 미연결)"]
+        DEC["정책 판정기<br/>(src/decider.mjs)"]
+        DET["위협 탐지기<br/>(src/detect.mjs)"]
+        CONF["배포 설정 / 원본 API<br/>(aleph.config.json)"]
+        XDRRULES["XDR 탐지 룰<br/>(xdr/*)"]
+    end
+
+    Browser <-->|HTTP REST 127.0.0.1:5189| LocalAppServer
 ```
 
-### 텍스트 구성도 요약
+### 시스템 구성도 상세 설명
 1. **사용자 브라우저 (`http://127.0.0.1:5189`)**:
-   - `public/index.html`, `public/app.js`: 전체 화면 뼈대 및 상태 관리.
-   - `student/extension.mjs`: 학생 작성 뷰 렌더러 (`createStudentView`).
-2. **로컬 앱 서버 (`on-client/src/server.mjs`)**:
-   - 127.0.0.1:5189에서 대시보드 정적 파일과 `/api/*` REST 엔드포인트를 서비스.
-   - `student/engine-adapter.mjs`를 통해 로컬 컨텍스트와 기기 상태를 연결.
-3. **접근 제어 및 XDR 시스템**:
-   - `src/decider.mjs`, `src/detect.mjs`: 규칙 기반 인가 판정 및 6종 위협 탐지.
-   - `aleph.config.json`: 중앙 발급자 및 원본 API 주소 정의.
-4. **수업용 AI 게이트웨이 (CLCO AI Gateway)**:
-   - `on-client/src/ai/service.mjs` 및 `on-client/vendor/clco-http.mjs`를 통해 게이트웨이 호출.
+   - `public/index.html`, `public/app.js`: 대시보드 레이아웃 구성, 폴링 타이머, 사용자 상호작용 처리.
+   - `student/extension.mjs`: `createStudentView`를 통해 8종의 학생 영역 화면을 렌더링.
+2. **on-client 로컬 앱 서버 (`on-client/src/server.mjs`)**:
+   - `node:http` 기반으로 127.0.0.1:5189에 바인딩되어 정적 리소스 및 `/api/*` 엔드포인트를 제공.
+   - **실제 소스코드 import 및 런타임 연결 모듈**:
+     - 엔진 브리지: `on-client/src/engine.mjs` (`loadEngine`, `demoEngine`)
+     - 학생 엔진 어댑터: `on-client/student/engine-adapter.mjs`
+     - SDP 호스트 엔진: `on-client/src/engine/sdp-host.mjs`, `sdp-host-config.mjs`
+     - 조치 서비스: `on-client/src/actions/service.mjs`, `sdp-action-engine.mjs`
+     - 취약점 스캔: `on-client/src/vulnerabilities/project-scan.mjs`, `osv.mjs`
+     - AI 서비스: `on-client/src/ai/service.mjs`, `vault-service.mjs`
+3. **수업용 AI 게이트웨이 (CLCO AI Gateway)**:
+   - `on-client/src/ai/service.mjs`가 `on-client/vendor/clco-http.mjs`를 통해 외부 게이트웨이 엔드포인트(`/chat`, `/connection`)로 Bearer 토큰 기반 요청을 전송.
+4. **[독립 모듈] 루트 서버 방어전 & XDR 랩 (on-client 미연결)**:
+   - 루트의 `src/decider.mjs`, `src/detect.mjs`, `xdr/*`, `aleph.config.json`은 대회 1~12단계의 독립된 서버 방어전 과제 구성요소입니다.
+   - `on-client/src/server.mjs`에서는 이들을 import하거나 런타임에 호출하지 않으며, 완전히 독립된 별도 모듈로 유지됩니다.
 
 ---
 
@@ -144,12 +157,13 @@ flowchart LR
 | 구분 | 파일 및 경로 | 주요 역할 및 학생 구현 함수 |
 |---|---|---|
 | **제공 코드** | `on-client/public/*` | 메인 레이아웃(`index.html`), 전역 상태 및 타이머(`app.js`), 스타일(`style.css`) |
-| **제공 코드** | `on-client/src/*` | 로컬 API 서버(`server.mjs`), OSV 스캐너(`vulnerabilities/osv.mjs`), AI 클라이언트 |
+| **제공 코드** | `on-client/src/*` | 로컬 API 서버(`server.mjs`), SDP 호스트(`sdp-host.mjs`), OSV 스캐너(`vulnerabilities/osv.mjs`), AI 클라이언트 |
 | **제공 코드** | `on-client/vendor/*` | AI 게이트웨이 HTTP 통신 전송기(`clco-http.mjs`) |
-| **학생 구현** | `on-client/student/extension.mjs` | **학생 전용 렌더링 뷰 모음**: |
+| **학생 구현** | `on-client/student/extension.mjs` | **학생 전용 렌더링 뷰 8종 모음 (`createStudentView`)**: |
 | └ 13단계 | `renderIdentity` | 사용자 계정, 등록 기기 규정 준수 여부, 세션 상태를 명확히 구분하여 표시 |
 | └ 14단계 | `renderDecision` | 업무 앱 인가 결과(allow/deny) 및 진단 가이드, 클립보드 진단 정보 복사 |
 | └ 15단계 | `renderStatus` | 접속 모드(demo/connected/unknown), 네이티브 기기 진단 및 상태 식별 |
+| └ 16단계 | `renderEvents` | 보안 기록(보안 사건 목록 및 상태별 상세 내역) 표시, 기록 오류 처리 |
 | └ 17단계 | `renderAiConnection` | AI 연결 점검 상태(test/verified), 검증 시각, 등록 모델 수, 수동 재점검 안내 |
 | └ 18단계 | `renderExplanation` | AI 보안 이벤트 설명, 근거(`evidenceIds`) 일치 검증, unknown 상태 명시 |
 | └ 19단계 | `renderAction` | 조치 제안·확인·서버 접수(ACK)와 실제 원천 효과(`effectApplied`) 엄격 분리 |
@@ -162,7 +176,7 @@ flowchart LR
 
 | 화면 오류 문구 | 원인 분석 | 확인 및 해결 방법 |
 |---|---|---|
-| **연결 없음 (disconnected)** | 로컬 데모 모드가 켜지지 않았거나 기존 엔진 서버 미기동 | `cd on-client` 후 `npm run demo`로 실행했는지 확인합니다. |
+| **연결 없음 (disconnected)** | `on-client`의 기본 실행(`npm start`)은 기존 회사 시스템(기존 엔진)에 연결되지 않은 **정상적인 기본 상태**임. `npm run demo`는 예제 자료를 띄우는 모드일 뿐 실제 연결을 수립하는 해결책이 아님. | 1. **기본 상태 인지**: 연결 없음은 비정상 오류가 아니라 외부 연동 설정이 없는 환경의 기본 동작임.<br/>2. **실제 연결 필요 시 확인 절차**:<br/>- 운영자가 제공한 네이티브 호스트 레지스트리 도구(`tools/native-host-registry.ps1`, `prepare-native-host.ps1`) 실행 및 브라우저 확장 등록 확인.<br/>- 운영자가 제공한 SDP 호스트 설정(`src/engine/sdp-host-config.mjs`) 및 인증 환경 변수 확인.<br/>- 학생 어댑터(`student/engine-adapter.mjs`)의 연결 설정 점검.<br/>3. **화면 렌더링 점검**: 단순히 학생 화면 동작을 테스트하려는 경우에만 `npm run demo`로 예제 데이터를 확인. |
 | **권한 준비 중 / 확인 불가** | 학생 계정의 AI 서비스 또는 SDP 권한이 발급 대기 중 | 공식 대회 운영진의 계정 권한 준비를 대기합니다 (학생 임의 조작 불필요). |
 | **조회 준비 미완료 (not_configured)** | 20단계 취약점 조회 대상 프로젝트 경로 미설정 | 운영자 설정 항목이며, 화면에서 안내되는 프로젝트 연결 준비 상태를 유지합니다. |
 | **아직 조회 안 함 (not_checked)** | 승인된 공개 패키지 대상이 없거나 스캔 미실행 | 화면 상단의 「설치 패키지 조회」 버튼을 직접 클릭하여 조회를 트리거합니다. |

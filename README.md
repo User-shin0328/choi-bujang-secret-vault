@@ -715,14 +715,16 @@ npm run xdr:run -- brute-force
 ### 현재 작동하는 기능
 1. **실행 설명서(Runbook) 작성 (`run_instructions`)**:
    - `docs/STUDENT_RUNBOOK.md`를 신규 생성하여 검증된 Node.js 버전(`v24.19.0`), npm 버전(`11.17.0`), 무의존성 환경, PowerShell 실행 위치, 실행 명령(`npm run demo` / `npm start`), 포트(`5189`), 정상 시작 신호, 종료(`Ctrl + C`) 및 재실행 순서를 명시했습니다.
-2. **4개 계층 시스템 아키텍처 및 구성도 (`architecture`)**:
-   - 브라우저(127.0.0.1:5189) → 로컬 앱 서버(`server.mjs`) → 접근 제어 및 XDR(`decider.mjs`, `detect.mjs`) / 수업용 AI 게이트웨이(`clco-http.mjs`)의 상호작용 관계를 Mermaid 다이어그램과 표 형식의 글로 표현했습니다.
-   - 구성도의 각 상자마다 실제 소스 파일 경로와 공개 가능한 로컬 주소를 명시했습니다.
+2. **시스템 아키텍처 및 모듈 분리 (`architecture`)**:
+   - `on-client/src/server.mjs`의 실제 소스코드 import 및 런타임 연결 모듈(엔진 브리지 `engine.mjs`, 학생 어댑터 `engine-adapter.mjs`, `sdp-host.mjs`, `actions/service.mjs`, `vulnerabilities/project-scan.mjs`, `ai/service.mjs` 및 HTTP 전송기 `clco-http.mjs`)을 명시했습니다.
+   - 루트의 `src/decider.mjs`, `src/detect.mjs`, `xdr/*`, `aleph.config.json`은 1~12단계 서버 방어전 랩을 위해 작성된 독립 모듈이며 `on-client` 런타임에 직접 연결되지 않음을 명확히 구분하여 Mermaid 다이어그램과 본문으로 표현했습니다.
 3. **제공 코드와 학생 구현 영역 경계 명시 (`provided_student_boundary`)**:
    - 제공 코드(`on-client/src/*`, `public/*`, `vendor/*`)와 학생 구현 코드(`on-client/student/extension.mjs`, `engine-adapter.mjs`)의 경계를 표로 구분했습니다.
-   - 학생 구현 함수(`renderIdentity` ~ `renderVulnerabilities`) 7종의 역할과 단계를 설명서에 정리했습니다.
+   - 실제 `extension.mjs`의 학생 구현 렌더링 함수 8종(`renderIdentity`, `renderDecision`, `renderStatus`, `renderEvents`, `renderAiConnection`, `renderExplanation`, `renderAction`, `renderVulnerabilities`) 전체와 학생 어댑터의 역할을 빠짐없이 정리했습니다.
 4. **장애 상황 및 오류별 해결 안내 (`failure_guide`)**:
-   - 연결 없음(`disconnected`), 권한 준비 중/확인 불가(`UNV`), 조회 준비 미완료(`not_configured`), lock 파일 확인 불가(`unverifiable`), 처리 중(`pending`), 시간 초과(`TIMEOUT`) 등 화면에 나타나는 실제 문구별 원인과 확인 순서를 표로 기술했습니다.
+   - `연결 없음 (disconnected)`은 `on-client` 기본 실행 시 외부 엔진 미연결 상태인 정상적인 기본 동작이며, 데모(`npm run demo`)는 예제 자료 점검용일 뿐 실제 연결 해결책이 아님을 명시했습니다.
+   - 실제 기존 시스템 연결이 필요할 때의 운영자 제공 설정 확인 절차(네이티브 호스트 레지스트리 도구 `native-host-registry.ps1`, `prepare-native-host.ps1`, SDP 호스트 설정 `sdp-host-config.mjs`, 학생 어댑터 `engine-adapter.mjs` 점검)를 기술했습니다.
+   - 그 외 권한 준비 중(`UNV`), 조회 준비 미완료(`not_configured`), lock 파일 확인 불가(`unverifiable`), 처리 중(`pending`), 시간 초과(`TIMEOUT`)의 원인과 조치법을 표로 기술했습니다.
 5. **지원 범위 및 기다림(UNV) 목록 분리**:
    - 실제 확인된 로컬 검증 항목과 심판/운영 측 권한 부여 대기(AI 모델 호출, 실제 SDP 조치 원천 집행, 라이브 OSV API) 항목을 분리하여 정직하게 기록했습니다.
 
