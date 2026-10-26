@@ -740,21 +740,22 @@ npm run xdr:run -- brute-force
 
 ## 22단계: 최종 커밋의 새 환경 재현과 릴리스 기록 (bankhar_b)
 
-22단계에서는 동일한 최종 커밋 소스코드를 제3자 또는 새로운 독립 환경에서 재현하고, 13~21단계의 누적 동작 결과를 정직하게 정리한 릴리스 문서([docs/STUDENT_RELEASE.md](docs/STUDENT_RELEASE.md))를 작성했습니다.
+22단계에서는 동일한 최종 커밋 소스코드를 제3자 또는 새로운 독립 환경에서 재현하고, 13~22단계의 누적 동작 결과와 SQLite 등 지속 데이터의 보존·백업·복원 계획을 정직하게 정리한 릴리스 문서([docs/STUDENT_RELEASE.md](docs/STUDENT_RELEASE.md))를 작성했습니다.
 
 ### 현재 작동하는 기능
-1. **새 환경 재현 절차 (`clean_environment`)**:
-   - 기존 작업 폴더(`c:\Users\User\Desktop\sktaleph2`)를 그대로 보존한 상태에서, 새 빈 폴더(`sktaleph2-clean`)에 저장소(`https://github.com/User-shin0328/choi-bujang-secret-vault`)를 복제하여 Node.js 24 런타임 검증, `npm run check`, `npm run demo`, 브라우저 확인, `Ctrl + C` 종료 및 재실행 절차를 수립했습니다.
-   - 로컬 절대경로나 하드코딩된 비밀값에 의존하지 않는 이동 가능한 구성(Portability)을 확인했습니다.
-2. **13~21단계 누적 동작 재현 대조표 (`cumulative_behavior`)**:
-   - 동일한 최종 커밋 기준으로 13단계부터 21단계까지 각 기능의 재현 결과(재현됨, 연결 없음, 확인 불가), 확인 시각, 비고(예제 자료/demo 명시), 코드 근거, 미확인 원인을 표로 정리했습니다.
+1. **새 환경 재현 절차 (이동 가능한 구성, `portable_package_readiness`)**:
+   - 특정 사용자 PC의 절대 경로(`C:\Users\...`)에 의존하지 않고, 임의의 빈 작업 폴더에서 상대 경로만으로 저장소를 복제(`git clone ... repro-client`), `cd on-client` 이동, Node.js 24 런타임 검증, `npm run check`, `npm run demo`, 브라우저 확인, `Ctrl + C` 종료 및 재실행할 수 있는 범용 절차를 수립했습니다.
+   - 런타임 의존성 없는 순수 Node.js 24 내장 모듈 사용과 환경 변수 기반 비밀값 분리를 확인했습니다.
+2. **13~22단계 누적 동작 재현 대조표 (`cumulative_source_consistency`, `reproduction_record_consistency`)**:
+   - 현재 22단계 제출 커밋과 소스코드를 단일 기준으로 삼아 13단계부터 22단계까지 각 기능의 재현 결과(재현됨, 연결 없음, 확인 불가), 확인 시각, 비고(예제 자료/demo 명시), 코드 근거, 미확인 원인을 표로 정리했습니다.
    - 예제 자료(`demo`) 결과와 실제 시스템 연결 성공을 명확히 구분하여 기록했습니다.
-3. **데이터 보존 계획 (`data_preservation`)**:
-   - 소스코드와 문서는 Git 커밋 및 `main` 브랜치로 영구 보존하며, 파괴적인 `git reset --hard` 대신 안전한 복원 절차를 명시했습니다.
-   - `bundle-notes.json` 및 `artifacts/` 폴더는 `.gitignore`로 격리하여 저장소 청결성을 유지하고, 비밀값은 환경 변수로 격리했습니다.
-4. **시연과 학생 진술 구분 및 지원 범위 (`release_reproduction`)**:
+3. **지속 데이터 및 SQLite 백업·복원 계획 (`data_preservation_plan`)**:
+   - 조치 모듈(`createActionService`, `on-client/src/actions/store.mjs`)이 사용하는 지속 SQLite DB(`databasePath`: `alekov_action_intents`, `state`, `audit` 테이블)의 보존 계획을 수립했습니다.
+   - **백업 순서**: 서버 정상 중지(`Ctrl + C`)로 쓰기 잠금 및 `ACTION_STORE_FAILED` 방지 → 타임스탬프 파일 복사 → 파일 크기 및 SQLite 3 헤더(`SQLite format 3\0`) 무결성 검증.
+   - **복원 순서 및 주의사항**: 기존 운영 DB를 확인 없이 덮어쓰지 않는 원칙(복원 전 임시 백업) → 서버 중지 상태에서 복원 → 단일 일반 파일 여부, SQLite 포맷 헤더, 테이블 스키마 및 기존 영수증/조치 기록 보존 상태 검증 → 서버 재기동 후 대시보드 이력 조회 확인.
+   - **복원 한계**: 브라우저 UI 휘발성 메모리 초기화 한계, 신원/엔진 세대 변경 시 조치 조회 거부 한계 명시.
+4. **시연과 학생 진술 구분 및 지원 범위 (`demo_self_report_distinction`, `version_scope_honest`)**:
    - `npm run demo`는 오프라인 시연 모드이며, 본 문서는 학생 개발자의 로컬 확인 진술서임을 명시했습니다.
-   - 심판 서버의 AI 원문 검토 통과를 실제 실행 성공 증명으로 단정하지 않았습니다.
    - 19단계 실제 원천 조치 집행 및 운영 연동이 남아 있으므로, 임의로 `v1.0`을 부여하지 않고 `v0.9.0-rc` (최종 검증 중 릴리스 후보)로 정직하게 기록했습니다.
 
 ### 다시 실행하는 방법
