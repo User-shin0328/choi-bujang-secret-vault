@@ -741,5 +741,5 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
       ...(actionStartup?{sdpActionStartup:actionStartup.sdpActionStartup}:{})});
   }catch(error){sdpHost?.close();throw error;}
   if(sdpHost){server.once('close',()=>sdpHost.close());server.once('error',()=>sdpHost.close());}
-  server.listen(port,'127.0.0.1',()=>console.log(`케셰브 ${demo?'예제':'연결 확인'}: http://127.0.0.1:${port}`));
+  server.listen(port,'127.0.0.1',()=>console.log(`[bankhar_b] ${demo?'예제':'연결 확인'}: http://127.0.0.1:${port}`));
 }
