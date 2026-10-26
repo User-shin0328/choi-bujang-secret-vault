@@ -10,8 +10,8 @@
 - **보안 Agent 명칭**: 「bankhar_b」
 - **저장소 URL**: `https://github.com/User-shin0328/choi-bujang-secret-vault`
 - **대상 브랜치**: `main`
-- **기준 최종 커밋 전체 해시 (22단계 최종 제출 커밋)**: `24415bcd1156707c503bc97a3e41b95d1d2f99ee`
-- **표의 검증 기준 명시**: 본 문서에 기록된 13~22단계 누적 동작 재현 대조표, 런타임 환경 사양, 실행 절차 및 관찰 결과는 위 22단계 최종 제출 커밋(`24415bcd1156707c503bc97a3e41b95d1d2f99ee`)을 단일 기준으로 검증 및 작성되었습니다.
+- **기준 최종 커밋 전체 해시 (22단계 최종 제출 커밋)**: `67d14f3b3e8b578de83990dd87642e6e1a7b0b0e`
+- **표의 검증 기준 명시**: 본 문서에 기록된 13~22단계 누적 동작 재현 대조표, 런타임 환경 사양, 실행 절차 및 관찰 결과는 위 22단계 최종 제출 커밋(`67d14f3b3e8b578de83990dd87642e6e1a7b0b0e`)을 단일 기준으로 검증 및 작성되었습니다.
 - **버전 표기 원칙 및 지원 범위 주의사항**:
   - 19단계의 실제 SDP 보안 조치 원천 집행 연결 및 공식 운영 심판 연동이 대기(UNV) 상태이므로, 최종 운영 인증 전까지는 `v1.0`을 부여하지 않고 `v0.9.0-rc`로 유지합니다.
   - 22단계 통과는 제출된 원문 검토 기준의 과제 수료 판정이며, 실제 운영 인증이나 v1.0 자동 인증을 의미하지 않습니다.
@@ -71,7 +71,7 @@ npm run demo
 
 ## 3. 13~22단계 누적 동작 재현 대조표 (Cumulative Behavior)
 
-본 대조표의 모든 재현 결과, 환경 사양, 실행 절차 및 확인 근거는 22단계 최종 제출 커밋(`24415bcd1156707c503bc97a3e41b95d1d2f99ee`) 소스코드([on-client/student/extension.mjs](../on-client/student/extension.mjs), [docs/](../docs/))를 단일 기준으로 대조하여 작성되었습니다.  
+본 대조표의 모든 재현 결과, 환경 사양, 실행 절차 및 확인 근거는 22단계 최종 제출 커밋(`67d14f3b3e8b578de83990dd87642e6e1a7b0b0e`) 소스코드([on-client/student/extension.mjs](../on-client/student/extension.mjs), [docs/](../docs/))를 단일 기준으로 대조하여 작성되었습니다.  
 *(주의: `npm run demo` 실행 결과는 "예제 자료"로 명시하며, 실제 서버 연결 성공으로 왜곡하지 않습니다)*
 
 | 단계 | 확인한 기능 | 재현 결과 | 확인 시각 | 비고 | 확인 근거 (코드/속성) | 미확인 원인 및 제한 사항 |
@@ -85,7 +85,7 @@ npm run demo
 | **19단계** | `renderAction`: 조치 제안·확인·ACK와 실제 원천 효과(`effectApplied`) 엄격 분리 | **재현됨** | 2026-10-26 14:00 | 예제 자료(demo) 및 모의 테스트 통과 (실제 집행 미실행) | `extension.mjs` L560-L640<br/>`data-student-section="action"` | 원천 시스템 지원 조치(`supportedActions`) 활성화 대기(UNV) |
 | **20단계** | `renderVulnerabilities`: 정확한 lock 버전 대조 및 OSV 취약점(none_found/unverifiable) 구분 | **재현됨** | 2026-10-26 14:00 | 예제 자료(demo) 및 모의 테스트 통과 | `extension.mjs` L350-L460<br/>`data-student-package-name` | 외부 라이브 OSV API 연동은 규격화된 로컬 캐시로 검증 |
 | **21단계** | `STUDENT_RUNBOOK.md`: 런타임 분리 구성도, 8종 함수 경계, 장애 해결서 | **재현됨** | 2026-10-26 14:00 | 문서 검증 완료 | `docs/STUDENT_RUNBOOK.md`<br/>`README.md` | 단독 문서 및 런타임 분리 완료 (제한 사항 없음) |
-| **22단계** | `STUDENT_RELEASE.md`: 새 환경 재현 절차, 누적 대조, SQLite 데이터 보존/복원, 릴리스 기록 | **재현됨** | 2026-10-26 14:00 | 최종 소스 일관성 및 재현 기록 검증 완료 | `docs/STUDENT_RELEASE.md`<br/>`README.md` | 최종 커밋 `24415bcd1156707c503bc97a3e41b95d1d2f99ee` 기준 일관되게 결속 완료 |
+| **22단계** | `STUDENT_RELEASE.md`: 새 환경 재현 절차, 누적 대조, SQLite 데이터 보존/복원, 릴리스 기록 | **재현됨** | 2026-10-26 14:00 | 최종 소스 일관성 및 재현 기록 검증 완료 | `docs/STUDENT_RELEASE.md`<br/>`README.md` | 최종 커밋 `67d14f3b3e8b578de83990dd87642e6e1a7b0b0e` 기준 일관되게 결속 완료 |
 
 ---
 
