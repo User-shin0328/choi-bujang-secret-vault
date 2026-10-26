@@ -731,8 +731,44 @@ export function createStudentView() {
 
       container.appendChild(el('h4', 'student-action-title', '보안 조치 요청 상태'));
 
-      // succeeded는 observation.effectApplied === true일 때만 효과 확인, 아니면 unknown(결과 불명)
+      // [핵심 기능 2] 4단계 조치 상태 전이 타임라인 게이지 UI
+      const steps = [
+        { id: 'proposal', label: '1. 조치 제안' },
+        { id: 'approval', label: '2. 사용자 확인' },
+        { id: 'pending', label: '3. 서버 접수(ACK)' },
+        { id: 'effect', label: '4. 원천 효과 확인' }
+      ];
+
+      // 단계별 진행도 판정 (succeeded는 observation.effectApplied === true일 때만 4단계 도달)
+      let currentStepIndex = 0;
+      if (curStatus === 'prepared') currentStepIndex = 1;
+      else if (curStatus === 'executing' || curStatus === 'pending') currentStepIndex = 2;
+      else if (curStatus === 'succeeded' && observation?.effectApplied === true) currentStepIndex = 3;
+
+      const timelineWrap = el('div', 'student-action-timeline-gauge');
+      steps.forEach((s, idx) => {
+        let stepClass = 'step-pending';
+        if (idx < currentStepIndex) stepClass = 'step-completed';
+        else if (idx === currentStepIndex && curStatus !== 'idle') stepClass = 'step-active';
+
+        const stepEl = el('div', `student-action-step ${stepClass}`);
+        stepEl.appendChild(el('span', 'step-number', `[${idx + 1}] `));
+        stepEl.appendChild(el('span', 'step-label', s.label));
+        timelineWrap.appendChild(stepEl);
+      });
+      container.appendChild(timelineWrap);
+
+      // [핵심 기능 2] 원천 효과 분리 경고 배지 시각화
       const isEffectApplied = curStatus === 'succeeded' && observation?.effectApplied === true;
+      const warningBadgeWrap = el('div', 'student-action-badge-row');
+      if (isEffectApplied) {
+        warningBadgeWrap.appendChild(el('span', 'student-badge badge-success', '✔ 원천 효과 적용 확인 (effectApplied: true)'));
+      } else {
+        warningBadgeWrap.appendChild(el('span', 'student-badge badge-warning', '⚠ 원천 집행 미연동 (SDP 원천 조치 미연결 상태)'));
+      }
+      container.appendChild(warningBadgeWrap);
+
+      // succeeded는 observation.effectApplied === true일 때만 효과 확인, 아니면 unknown(결과 불명)
       const effStatus = (curStatus === 'succeeded' && !isEffectApplied) ? 'unknown' : curStatus;
 
       if (effStatus === 'idle') {
