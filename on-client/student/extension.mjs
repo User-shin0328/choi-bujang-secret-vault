@@ -510,6 +510,28 @@ export function createStudentView() {
         .pc-status-dot.dot-alert { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
         .pc-status-dot.dot-unv { background: #94a3b8; }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.15); } }
+
+        /* 하위 보조 진단 2x2 반응형 그리드 */
+        .pc-sub-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;
+        }
+        .pc-sub-grid {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 14px; margin-top: 12px;
+        }
+        .pc-sub-card {
+          padding: 14px 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+          background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+          display: flex; flex-direction: column;
+        }
+        .pc-sub-card h4 {
+          margin: 0 0 8px; font-size: 0.95rem; color: #1e3a8a; display: flex;
+          align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;
+        }
+        .pc-sub-card .plain-list { margin: 0; padding: 0; list-style: none; font-size: 0.86rem; }
+        .pc-sub-card .plain-list li { padding: 4px 0; border-bottom: 1px dashed #e2e8f0; line-height: 1.5; }
+        .pc-sub-card .plain-list li:last-child { border-bottom: none; }
       `);
       container.appendChild(statusStyle);
 
@@ -901,78 +923,86 @@ export function createStudentView() {
       container.appendChild(timelineSection);
 
       // ======================================================================
-      // 4. 기존 알림 상태 (보존)
+      // 4. 보조 점검 통합 영역 (알림·기기·세션·도움정보 2x2 반응형 카드 그리드)
       // ======================================================================
-      const notifSection = el('section', 'student-status-card');
-      notifSection.appendChild(el('h3', null, '알림 상태'));
+      const subSection = el('section', 'student-status-card');
+      const subHeader = el('div', 'pc-sub-header');
+      subHeader.innerHTML = `
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span class="pc-circle-badge circle-blue">📋</span>보조 점검 및 세션·기기·알림 진단
+        </h3>
+        <span class="pc-badge-tag real">통합 2×2 그리드</span>
+      `;
+      subSection.appendChild(subHeader);
+      subSection.appendChild(el('p', 'status-note', '알림 상태, 등록 기기, 검증 세션, 디버그 도움정보를 한눈에 볼 수 있도록 컴팩트하게 정돈하여 제공합니다.'));
+
+      const subGrid = el('div', 'pc-sub-grid');
+
+      // (1) 알림 상태 카드
+      const notifCard = el('div', 'pc-sub-card');
       const notifList = Array.isArray(notifications) ? notifications : [];
-      if (notifList.length === 0) notifSection.appendChild(el('p', 'status-empty', '주의할 알림이 없습니다.'));
+      notifCard.innerHTML = `<h4><span>🔔 알림 상태</span><span class="pc-badge-tag ${notifList.length > 0 ? 'unv' : 'real'}">${notifList.length > 0 ? `${notifList.length}건 주의` : '정상'}</span></h4>`;
+      if (notifList.length === 0) notifCard.appendChild(el('p', 'status-empty', '주의할 알림이 없습니다.'));
       else {
         const ul = el('ul', 'plain-list');
         for (const item of notifList) ul.appendChild(el('li', null, `[자료: ${item.resource || '미지정'}] 코드: ${item.code || '알림'} · 내용: ${item.message || ''}`));
-        notifSection.appendChild(ul);
+        notifCard.appendChild(ul);
       }
-      container.appendChild(notifSection);
+      subGrid.appendChild(notifCard);
 
-      // ======================================================================
-      // 5. 기존 기기 점검 상태 (보존)
-      // ======================================================================
-      const devSection = el('section', 'student-status-card');
-      devSection.appendChild(el('h3', null, '기기 점검 상태'));
-      if (!devices || devices.status === 'loading') devSection.appendChild(el('p', 'status-loading', '기기 목록을 불러오는 중…'));
+      // (2) 기기 점검 상태 카드
+      const devCard = el('div', 'pc-sub-card');
+      const dList = Array.isArray(devices?.data) ? devices.data : [];
+      devCard.innerHTML = `<h4><span>💻 기기 점검 상태</span><span class="pc-badge-tag ${devices?.status === 'ok' ? 'real' : 'unv'}">${devices?.status === 'ok' ? `${dList.length}대 등록` : '점검 대기'}</span></h4>`;
+      if (!devices || devices.status === 'loading') devCard.appendChild(el('p', 'status-loading', '기기 목록을 불러오는 중…'));
       else if (devices.status === 'error') {
         const timeoutNotice = isTimeout(devices.error) ? ' (요청 시간 초과)' : '';
-        devSection.appendChild(el('p', 'status-alert', `기기 목록을 불러오지 못했습니다: ${devices.error?.message || '확인 불가'}${timeoutNotice}`));
-        devSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
+        devCard.appendChild(el('p', 'status-alert', `기기 목록을 불러오지 못했습니다: ${devices.error?.message || '확인 불가'}${timeoutNotice}`));
+        devCard.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
       } else {
-        const dList = Array.isArray(devices.data) ? devices.data : [];
-        if (dList.length === 0) devSection.appendChild(el('p', 'status-empty', '등록된 기기가 없음'));
+        if (dList.length === 0) devCard.appendChild(el('p', 'status-empty', '등록된 기기가 없음'));
         else {
           const ul = el('ul', 'plain-list');
           for (const d of dList) {
             const raw = d.status || 'unknown', text = DEVICE_STATUS_LABELS[raw] || '확인 불가';
             ul.appendChild(el('li', raw === 'noncompliant' ? 'status-warning' : null, `기기: ${d.label || d.id || '기기'} (${d.id || ''}) · 상태: ${text} (${raw})`));
           }
-          devSection.appendChild(ul);
+          devCard.appendChild(ul);
         }
       }
-      container.appendChild(devSection);
+      subGrid.appendChild(devCard);
 
-      // ======================================================================
-      // 6. 기존 세션 점검 상태 (보존)
-      // ======================================================================
-      const sessSection = el('section', 'student-status-card');
-      sessSection.appendChild(el('h3', null, '세션 점검 상태'));
-      sessSection.appendChild(el('p', 'status-note', '세션은 지금 검증된 연결 하나만 조회됩니다. (지난 세션 목록이 아님)'));
-      if (!sessions || sessions.status === 'loading') sessSection.appendChild(el('p', 'status-loading', '세션 정보를 불러오는 중…'));
+      // (3) 세션 점검 상태 카드
+      const sessCard = el('div', 'pc-sub-card');
+      const sList = Array.isArray(sessions?.data) ? sessions.data : [];
+      sessCard.innerHTML = `<h4><span>🔑 세션 점검 상태</span><span class="pc-badge-tag ${sessions?.status === 'ok' ? 'real' : 'unv'}">${sessions?.status === 'ok' ? `${sList.length}개 세션` : '연결 확인'}</span></h4>`;
+      sessCard.appendChild(el('p', 'status-note', '세션은 지금 검증된 연결 하나만 조회됩니다. (지난 세션 목록이 아님)'));
+      if (!sessions || sessions.status === 'loading') sessCard.appendChild(el('p', 'status-loading', '세션 정보를 불러오는 중…'));
       else if (sessions.status === 'error') {
         const timeoutNotice = isTimeout(sessions.error) ? ' (요청 시간 초과)' : '';
-        sessSection.appendChild(el('p', 'status-alert', `세션 정보를 불러오지 못했습니다: ${sessions.error?.message || '확인 불가'}${timeoutNotice}`));
-        sessSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
+        sessCard.appendChild(el('p', 'status-alert', `세션 정보를 불러오지 못했습니다: ${sessions.error?.message || '확인 불가'}${timeoutNotice}`));
+        sessCard.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)'));
       } else {
-        const sList = Array.isArray(sessions.data) ? sessions.data : [];
-        if (sList.length === 0) sessSection.appendChild(el('p', 'status-empty', '현재 연결 없음'));
+        if (sList.length === 0) sessCard.appendChild(el('p', 'status-empty', '현재 연결 없음'));
         else {
           const ul = el('ul', 'plain-list');
           for (const s of sList) {
             const raw = s.status || 'unknown', text = SESSION_STATUS_LABELS[raw] || '확인 불가';
             ul.appendChild(el('li', (raw === 'expired' || raw === 'revoked') ? 'status-alert' : null, `세션: ${s.id || '세션'} · 상태: ${text} (${raw})`));
           }
-          sessSection.appendChild(ul);
+          sessCard.appendChild(ul);
         }
       }
-      container.appendChild(sessSection);
+      subGrid.appendChild(sessCard);
 
-      // ======================================================================
-      // 7. 기존 도움정보 (진단 정보) (보존)
-      // ======================================================================
-      const diagSection = el('section', 'student-status-card');
-      diagSection.appendChild(el('h3', null, '도움정보 (진단 정보)'));
-      if (!diagnostics || diagnostics.status === 'idle') diagSection.appendChild(el('p', 'status-empty', '도움정보가 아직 조회되지 않았습니다. 제공 화면의 「도움정보 불러오기」를 누르세요.'));
-      else if (diagnostics.status === 'loading') diagSection.appendChild(el('p', 'status-loading', '도움정보를 불러오는 중…'));
+      // (4) 도움정보 (진단 정보) 카드
+      const diagCard = el('div', 'pc-sub-card');
+      diagCard.innerHTML = `<h4><span>🛠 도움정보 (진단 정보)</span><span class="pc-badge-tag ${diagnostics?.status === 'ok' ? 'real' : 'unv'}">${diagnostics?.status === 'ok' ? '수집 완료' : '조회 대기'}</span></h4>`;
+      if (!diagnostics || diagnostics.status === 'idle') diagCard.appendChild(el('p', 'status-empty', '도움정보가 아직 조회되지 않았습니다. 제공 화면의 「도움정보 불러오기」를 누르세요.'));
+      else if (diagnostics.status === 'loading') diagCard.appendChild(el('p', 'status-loading', '도움정보를 불러오는 중…'));
       else if (diagnostics.status === 'error') {
-        diagSection.appendChild(el('p', 'status-alert', `도움정보를 불러오지 못했습니다: ${diagnostics.error?.message || '확인 불가'}`));
-        diagSection.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요.'));
+        diagCard.appendChild(el('p', 'status-alert', `도움정보를 불러오지 못했습니다: ${diagnostics.error?.message || '확인 불가'}`));
+        diagCard.appendChild(el('p', 'status-note', '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요.'));
       } else {
         const diagData = diagnostics.data || {};
         const safeDiagnostics = {
@@ -990,9 +1020,9 @@ export function createStudentView() {
         ul.appendChild(el('li', null, `확인 시각 (checkedAt): ${safeDiagnostics.checkedAt}`));
         ul.appendChild(el('li', null, `엔진 모드 (engine.mode): ${safeDiagnostics.engineMode}`));
         ul.appendChild(el('li', null, `엔진 코드 (engine.code): ${safeDiagnostics.engineCode}`));
-        diagSection.appendChild(ul);
+        diagCard.appendChild(ul);
 
-        const copyBtn = el('button', 'btn', '도움정보 복사', { type: 'button', 'aria-label': '도움정보 복사' });
+        const copyBtn = el('button', 'btn', '도움정보 복사', { type: 'button', 'aria-label': '도움정보 복사', style: 'margin-top: 8px;' });
         const copyNotice = el('p', 'status-note', '이 정보는 도움 요청에 쓰도록 비밀(API 키·토큰) 없는 안전한 값만 복사됩니다.');
         copyBtn.onclick = async () => {
           try {
@@ -1000,10 +1030,13 @@ export function createStudentView() {
             copyNotice.textContent = '도움정보가 클립보드에 안전하게 복사되었습니다.';
           } catch { copyNotice.textContent = '클립보드 복사에 실패했습니다.'; }
         };
-        diagSection.appendChild(copyBtn);
-        diagSection.appendChild(copyNotice);
+        diagCard.appendChild(copyBtn);
+        diagCard.appendChild(copyNotice);
       }
-      container.appendChild(diagSection);
+      subGrid.appendChild(diagCard);
+
+      subSection.appendChild(subGrid);
+      container.appendChild(subSection);
       return container;
     },
 
