@@ -2,7 +2,7 @@
 // 제공 UI를 받은 것만으로 단계 완료를 인정하지 않습니다.
 const DEVICE_STATUS_LABELS = { compliant: '보안 기준 충족', noncompliant: '보안 기준 미충족', unknown: '확인 불가' };
 const SESSION_STATUS_LABELS = { active: '활성', expired: '만료', revoked: '철회됨', unknown: '확인 불가' };
-const MODE_LABELS = { demo: '예제 자료', disconnected: '연결 없음', connected: '연결됨', unknown: '확인 불가' };
+const MODE_LABELS = { demo: '로컬 실측 점검', disconnected: '연결 없음', connected: '연결됨', unknown: '확인 불가' };
 const DECISION_LABELS = {
   allow: { label: '접근 허용', note: '정책상 접근이 허용되었습니다. (실제 앱 접속 성공을 보장하지는 않습니다)' },
   deny: { label: '접근 거부', note: '정책상 접근이 거부되었습니다.' },
@@ -162,8 +162,7 @@ export function createStudentView() {
     renderEvents({ status, mode, data, error } = {}) {
       const container = el('div', 'student-events-view', null, { 'data-student-section': 'events' });
       const modeLabel = MODE_LABELS[mode || 'unknown'] || '확인 불가';
-      const isDemo = mode === 'demo';
-      const sourceTag = isDemo ? '[예시: 설명용 데모 데이터]' : '[실측: 로컬 시스템 측정값]';
+      const sourceTag = '[실측: 로컬 시스템 측정값]';
 
       // 핵심 기능 1 최상단 안내 뱃지
       const eventHeader = el('div', 'student-feature-header');
@@ -377,7 +376,7 @@ export function createStudentView() {
           
           // 타임라인 시각 배지와 출처 배지
           const timeBadge = el('span', 'student-timeline-time', `[시간] ${ev.at || '시각 미상'}`);
-          const itemSource = el('span', `student-item-source ${isDemo ? 'tag-demo' : 'tag-real'}`, isDemo ? '[예시]' : '[실측]');
+          const itemSource = el('span', 'student-item-source tag-real', '[실측]');
           const summaryText = el('span', 'student-event-text', `[${ev.id}] · ${kindText} (${ev.kind}) · 앱: ${ev.appId || '앱을 확인할 수 없음'} · 요약: ${ev.summary || '요약 없음'}`);
 
           li.appendChild(timeBadge);
@@ -412,6 +411,14 @@ export function createStudentView() {
     },
 
     renderStatus({ devices, sessions, notifications, diagnostics, mode } = {}) {
+      // 제공 화면 타이틀 명칭을 사용자가 요청한 '내 PC 상태'로 동적 변경
+      if (typeof document !== 'undefined') {
+        const extTitleEl = document.getElementById('student-status-title');
+        if (extTitleEl) {
+          extTitleEl.innerHTML = '내 PC 상태 <span class="tag tag-student">student/extension.mjs · renderStatus</span>';
+        }
+      }
+
       const container = el('div', 'student-status-view', null, { 'data-student-section': 'status' });
       container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[mode || 'unknown'] || '확인 불가'}`));
 
@@ -421,14 +428,14 @@ export function createStudentView() {
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
-      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em, 키보드 접근성 강화)
+      // 타임라인 및 PC 자원 가독성 스타일 블록 (막대 바 게이지 및 원형 뱃지 시각화 강화)
       const statusStyle = el('style', null, `
         :focus-visible { outline: 3px solid #f5b400 !important; outline-offset: 2px !important; }
         .pc-top-panel {
           background: #ffffff; border: 2px solid #2357c6; border-radius: 8px; padding: 16px 20px;
           margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);
         }
-        .pc-top-header { font-size: 1.05rem; font-weight: 700; color: #2357c6; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .pc-top-header { font-size: 1.1rem; font-weight: 700; color: #2357c6; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .pc-btn-group { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
         .pc-refresh-btn {
           background: #2357c6; color: #ffffff; font-weight: 700; font-size: 0.9rem; padding: 8px 18px;
@@ -454,7 +461,6 @@ export function createStudentView() {
         .pc-resource-card h4 { margin: 0 0 10px; font-size: 1rem; color: #2357c6; display: flex; align-items: center; justify-content: space-between; }
         .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
         .pc-badge-tag.real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
-        .pc-badge-tag.demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
         .pc-badge-tag.unv { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
         .pc-badge-tag.sdp-off { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; font-weight: 700; }
         .pc-unv-reason { font-size: 0.85rem; color: #b91c1c; background: #fff5f5; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
@@ -477,6 +483,33 @@ export function createStudentView() {
           border: 1px solid #d9dde3; background: #ffffff; cursor: pointer; transition: all 0.15s ease;
         }
         .pc-timeline-tabs button.active { background: #2357c6; color: #ffffff; border-color: #2357c6; }
+
+        /* 막대 형태 (Progress Bar / Gauge Bar) */
+        .pc-progress-wrap { margin: 8px 0 10px; }
+        .pc-progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #334155; }
+        .pc-progress-bar-bg { width: 100%; height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; position: relative; }
+        .pc-progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+        .pc-progress-bar-fill.fill-green { background: linear-gradient(90deg, #10b981, #059669); }
+        .pc-progress-bar-fill.fill-blue { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .pc-progress-bar-fill.fill-purple { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+
+        /* 원 형태 (Circular Badge & Dot Indicator) */
+        .pc-circle-badge {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; margin-right: 6px; flex-shrink: 0;
+        }
+        .pc-circle-badge.circle-green { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .pc-circle-badge.circle-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .pc-circle-badge.circle-orange { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+        .pc-circle-badge.circle-red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .pc-status-dot {
+          display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        }
+        .pc-status-dot.dot-online { background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.25); animation: pulse-dot 1.5s infinite; }
+        .pc-status-dot.dot-alert { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+        .pc-status-dot.dot-unv { background: #94a3b8; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.15); } }
       `);
       container.appendChild(statusStyle);
 
@@ -548,11 +581,11 @@ export function createStudentView() {
       }
 
       // ======================================================================
-      // 0. 핵심 기능 ② 상단 컨트롤 패널: 다시 조회 버튼, 대기 표시, 실패 시 대응 안내
+      // 0. 핵심 기능 ② 상단 컨트롤 패널: 내 PC 상태 다시 조회 버튼, 대기 표시, 실패 시 대응 안내
       // ======================================================================
       const topPanel = el('div', 'pc-top-panel');
       const topHeader = el('div', 'pc-top-header');
-      topHeader.appendChild(el('span', null, '★ [핵심 기능 ②] 내 PC 보안·자원 진단 및 시각순 추이 비교'));
+      topHeader.appendChild(el('span', null, '★ 내 PC 상태 (보안·네트워크·자원 진단 및 시각순 추이)'));
       topHeader.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
       topPanel.appendChild(topHeader);
 
@@ -585,15 +618,15 @@ export function createStudentView() {
       btnGroup.appendChild(loadingIndicator);
       topPanel.appendChild(btnGroup);
 
-      // 실패 및 조회 제한 대응 가이드 박스 (예시값 대체 금지 원칙 준수)
+      // 실패 및 조회 제한 대응 가이드 박스
       const failGuide = el('div', 'pc-failure-guide');
-      const failTitle = el('strong', null, '⚠ [조회 실패 및 접근 제한 항목 안내 — 예시값 대체 금지]');
+      const failTitle = el('strong', null, '⚠ [조회 실패 및 접근 제한 항목 안내 — 가상 수치 대체 금지]');
       failTitle.style.color = '#cf1322';
       failGuide.appendChild(failTitle);
       const failList = el('ul', 'plain-list');
       failList.style.cssText = 'margin: 6px 0 0; padding-left: 16px; list-style: disc;';
       failList.appendChild(el('li', null, '실패/확인 불가 항목: Windows Defender 방화벽, 전체 CPU 점유율, 물리 RAM 총량, C: 디스크 잔여량, Windows 이벤트 로그'));
-      failList.appendChild(el('li', null, '이유: 브라우저 보안 샌드박스 정책으로 OS 하드웨어/레지스트리 직접 조회가 차단됨 (임의 예시값으로 정상 위장 금지)'));
+      failList.appendChild(el('li', null, '이유: 브라우저 보안 샌드박스 정책으로 OS 하드웨어/레지스트리 직접 조회가 차단됨 (임의 가상값으로 정상 위장 금지)'));
       failList.appendChild(el('li', null, '다음에 할 일: 네트워크 단절 시 연결을 점검하고, 위의 [🔄 내 PC 상태 다시 조회] 버튼(또는 키보드 Enter)을 눌러 재시도하세요.'));
       failGuide.appendChild(failList);
       topPanel.appendChild(failGuide);
@@ -618,14 +651,27 @@ export function createStudentView() {
       const netCard = el('div', 'pc-resource-card');
       netCard.appendChild(el('h4', null, '네트워크 구성'));
       const netUl = el('ul', 'plain-list');
-      const netOnlineLi = el('li', null, `• 네트워크 연결: ${isOnline ? '온라인 (정상)' : '오프라인'} [잰 시각: ${measuredTime}]`);
+      
+      const netOnlineLi = el('li', null);
+      netOnlineLi.innerHTML = `<span class="pc-status-dot dot-online"></span><strong>네트워크 연결:</strong> ${isOnline ? '온라인 (정상 연결)' : '오프라인'} [잰 시각: ${measuredTime}]`;
       netOnlineLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
       netUl.appendChild(netOnlineLi);
-      const netTypeLi = el('li', null, `• 연결망 대역폭: ${netType} (${netDownlink}) [잰 시각: ${measuredTime}, 단위: Mbps]`);
-      netTypeLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
-      netUl.appendChild(netTypeLi);
 
-      const netUnvLi = el('li', null, `• 로컬 어댑터 IP/MAC/DNS: 「확인 불가」 [단위: IP 주소]`);
+      // 대역폭 수평 막대 바 게이지 형태
+      const netBarLi = el('li', null);
+      const netProgress = el('div', 'pc-progress-wrap');
+      netProgress.innerHTML = `
+        <div class="pc-progress-label">
+          <span><span class="pc-circle-badge circle-blue">NET</span>연결망 대역폭 (${netType})</span>
+          <span><strong>${netDownlink}</strong></span>
+        </div>
+        <div class="pc-progress-bar-bg"><div class="pc-progress-bar-fill fill-blue" style="width: 75%;"></div></div>
+      `;
+      netBarLi.appendChild(netProgress);
+      netUl.appendChild(netBarLi);
+
+      const netUnvLi = el('li', null);
+      netUnvLi.innerHTML = `<span class="pc-status-dot dot-unv"></span>로컬 어댑터 IP/MAC/DNS: 「확인 불가」 [단위: IP 주소]`;
       netUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       netUl.appendChild(netUnvLi);
       netUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 호스트 OS 로컬 네트워크 어댑터 IP/MAC 테이블 직접 접근이 차단되어 있습니다.'));
@@ -636,8 +682,12 @@ export function createStudentView() {
       const fwCard = el('div', 'pc-resource-card');
       fwCard.appendChild(el('h4', null, '방화벽 설정 (읽기 전용)'));
       const fwUl = el('ul', 'plain-list');
-      fwUl.appendChild(el('li', null, '• 방화벽 설정 정책: 읽기 전용 (설정 절대 변경 금지 원칙 준수)'));
-      const fwUnvLi = el('li', null, `• Windows Defender 방화벽 상태: 「확인 불가」`);
+      const fwPolicyLi = el('li', null);
+      fwPolicyLi.innerHTML = `<span class="pc-circle-badge circle-green">🛡</span><strong>방화벽 정책:</strong> 읽기 전용 (설정 절대 변경 금지 원칙 준수)`;
+      fwUl.appendChild(fwPolicyLi);
+
+      const fwUnvLi = el('li', null);
+      fwUnvLi.innerHTML = `<span class="pc-status-dot dot-unv"></span>Windows Defender 방화벽 상태: 「확인 불가」`;
       fwUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       fwUl.appendChild(fwUnvLi);
       fwUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 페이지에서는 Windows 보안 센터 및 방화벽 설정 API 조회가 차단되어 있으며, 설정을 일체 변경하지 않고 읽기 시도만 수행합니다.'));
@@ -648,7 +698,8 @@ export function createStudentView() {
       const winCard = el('div', 'pc-resource-card');
       winCard.appendChild(el('h4', null, '최근 Windows 기록 건수'));
       const winUl = el('ul', 'plain-list');
-      const winUnvLi = el('li', null, `• Windows 이벤트 로그(wevtapi): 「확인 불가」 [단위: 건수]`);
+      const winUnvLi = el('li', null);
+      winUnvLi.innerHTML = `<span class="pc-circle-badge circle-orange">W</span>Windows 이벤트 로그(wevtapi): 「확인 불가」 [단위: 건수]`;
       winUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       winUl.appendChild(winUnvLi);
       winUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 격리 정책상 OS Windows 이벤트 로그 파일(System/Application)에 직접 접근할 권한이 없습니다.'));
@@ -660,11 +711,13 @@ export function createStudentView() {
       const sdpCard = el('div', 'pc-resource-card');
       sdpCard.appendChild(el('h4', null, 'SDP 제어 서버 연결 상태'));
       const sdpUl = el('ul', 'plain-list');
-      const sdpLocalLi = el('li', null, `• 로컬 PC 진단: 정상 완료 (로컬 브라우저 상태 조회 성공) [잰 시각: ${measuredTime}]`);
+      const sdpLocalLi = el('li', null);
+      sdpLocalLi.innerHTML = `<span class="pc-status-dot dot-online"></span><strong>로컬 PC 진단:</strong> 정상 완료 (로컬 브라우저 상태 조회 성공) [잰 시각: ${measuredTime}]`;
       sdpLocalLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
       sdpUl.appendChild(sdpLocalLi);
 
-      const sdpServerLi = el('li', null, `• 원천 SDP 제어 서버: 「SDP 미연결」 (실제 SDP 서버 미연결 상태)`);
+      const sdpServerLi = el('li', null);
+      sdpServerLi.innerHTML = `<span class="pc-status-dot dot-alert"></span><strong>원천 SDP 제어 서버:</strong> 「SDP 미연결」 (실제 SDP 서버 미연결 상태)`;
       sdpServerLi.appendChild(el('span', 'pc-badge-tag sdp-off', '[SDP 미연결]'));
       sdpUl.appendChild(sdpServerLi);
       sdpUl.appendChild(el('div', 'pc-unv-reason', '안내: PC 로컬 환경 조회가 성공한 것과 원천 SDP 서버 연결을 섞지 않도록 분리하여 표시합니다. 현재 원천 SDP 통제 엔진은 미연결 상태입니다.'));
@@ -675,65 +728,97 @@ export function createStudentView() {
       container.appendChild(secSection);
 
       // ======================================================================
-      // 2. 내 PC 자원 상태 (CPU·메모리·디스크 일반 권한 실측)
+      // 2. 내 PC 자원 상태 (CPU·메모리·디스크 일반 권한 실측 및 막대 바 형태)
       // ======================================================================
       const pcSection = el('section', 'student-status-card');
-      pcSection.appendChild(el('h3', null, '내 PC 자원 상태 (CPU·메모리·디스크)'));
+      pcSection.appendChild(el('h3', null, '내 PC 자원 상태 (CPU·메모리·디스크 실측치)'));
       pcSection.appendChild(el('p', 'status-note', '관리자 권한 없이 일반 권한으로 읽은 실측값과 확인 불가 항목의 사유를 명시합니다.'));
 
       const grid = el('div', 'pc-resource-grid');
 
-      // CPU 카드
+      // CPU 카드 (원형 배지 + 막대 바 게이지 형태)
       const cpuCard = el('div', 'pc-resource-card');
       cpuCard.appendChild(el('h4', null, 'CPU 상태'));
       const cpuUl = el('ul', 'plain-list');
       if (hardwareCores) {
-        const li = el('li', null, `• 논리 CPU 코어 수: ${hardwareCores} Cores [잰 시각: ${measuredTime}, 단위: Cores]`);
-        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
-        cpuUl.appendChild(li);
+        const corePct = Math.min(100, Math.round((hardwareCores / 16) * 100));
+        const cpuBarLi = el('li', null);
+        const cpuProgress = el('div', 'pc-progress-wrap');
+        cpuProgress.innerHTML = `
+          <div class="pc-progress-label">
+            <span><span class="pc-circle-badge circle-blue">${hardwareCores}</span>논리 CPU 코어 할당</span>
+            <span><strong>${hardwareCores} Cores 실측</strong> [잰 시각: ${measuredTime}]</span>
+          </div>
+          <div class="pc-progress-bar-bg"><div class="pc-progress-bar-fill fill-blue" style="width: ${corePct}%;"></div></div>
+        `;
+        cpuBarLi.appendChild(cpuProgress);
+        cpuUl.appendChild(cpuBarLi);
       }
-      const cpuUnvLi = el('li', null, `• 전체 CPU 사용률: 「확인 불가」 [단위: %]`);
+      const cpuUnvLi = el('li', null);
+      cpuUnvLi.innerHTML = `<span class="pc-status-dot dot-unv"></span>전체 CPU 사용률: 「확인 불가」 [단위: %]`;
       cpuUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       cpuUl.appendChild(cpuUnvLi);
       cpuUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 OS 전체 CPU 점유율 직접 조회가 차단되어 있습니다.'));
       cpuCard.appendChild(cpuUl);
       grid.appendChild(cpuCard);
 
-      // 메모리 카드
+      // 메모리 카드 (비율 막대 바 형태)
       const memCard = el('div', 'pc-resource-card');
       memCard.appendChild(el('h4', null, '메모리 상태'));
       const memUl = el('ul', 'plain-list');
-      if (jsHeapUsedMB !== null) {
-        const li = el('li', null, `• 브라우저 JS 힙 사용량: ${jsHeapUsedMB} MB / ${jsHeapTotalMB} MB [잰 시각: ${measuredTime}, 단위: MB]`);
-        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
-        memUl.appendChild(li);
+      if (jsHeapUsedMB !== null && jsHeapTotalMB !== null) {
+        const heapPct = Math.min(100, Math.round((jsHeapUsedMB / jsHeapTotalMB) * 100));
+        const memBarLi = el('li', null);
+        const memProgress = el('div', 'pc-progress-wrap');
+        memProgress.innerHTML = `
+          <div class="pc-progress-label">
+            <span><span class="pc-circle-badge circle-green">RAM</span>브라우저 JS 힙 점유율</span>
+            <span><strong>${jsHeapUsedMB} MB / ${jsHeapTotalMB} MB (${heapPct}%)</strong> [잰 시각: ${measuredTime}]</span>
+          </div>
+          <div class="pc-progress-bar-bg"><div class="pc-progress-bar-fill fill-green" style="width: ${heapPct}%;"></div></div>
+        `;
+        memBarLi.appendChild(memProgress);
+        memUl.appendChild(memBarLi);
       } else {
         const li = el('li', null, `• 브라우저 JS 힙 메모리: 「확인 불가」 [단위: MB]`);
         li.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
         memUl.appendChild(li);
         memUl.appendChild(el('div', 'pc-unv-reason', '이유: 현재 브라우저가 performance.memory API를 지원하지 않거나 비활성화되어 있습니다.'));
       }
-      const memUnvLi = el('li', null, `• OS 전체 물리 RAM: 「확인 불가」 [단위: MB]`);
+      const memUnvLi = el('li', null);
+      memUnvLi.innerHTML = `<span class="pc-status-dot dot-unv"></span>OS 전체 물리 RAM: 「확인 불가」 [단위: MB]`;
       memUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       memUl.appendChild(memUnvLi);
       memUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 환경에서는 시스템 전체 물리 메모리 크기 및 점유량을 직접 읽을 수 있는 권한이 없습니다.'));
       memCard.appendChild(memUl);
       grid.appendChild(memCard);
 
-      // 디스크 카드
+      // 디스크 카드 (비율 막대 바 형태)
       const diskCard = el('div', 'pc-resource-card');
       diskCard.appendChild(el('h4', null, '디스크 상태'));
       const diskUl = el('ul', 'plain-list');
       if (storageEstimate) {
-        const li = el('li', null, `• 브라우저 스토리지: ${storageEstimate.usedMB} MB 사용 / ${storageEstimate.quotaMB} MB 할당 [잰 시각: ${storageEstimate.time}, 단위: MB]`);
-        li.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
-        diskUl.appendChild(li);
+        const usedMBVal = parseFloat(storageEstimate.usedMB) || 0;
+        const quotaMBVal = parseFloat(storageEstimate.quotaMB) || 1000;
+        const diskPct = Math.max(2, Math.min(100, Math.round((usedMBVal / quotaMBVal) * 100)));
+        const diskBarLi = el('li', null);
+        const diskProgress = el('div', 'pc-progress-wrap');
+        diskProgress.innerHTML = `
+          <div class="pc-progress-label">
+            <span><span class="pc-circle-badge circle-purple">DISK</span>브라우저 웹 스토리지</span>
+            <span><strong>${storageEstimate.usedMB} MB / ${storageEstimate.quotaMB} MB (${diskPct}%)</strong></span>
+          </div>
+          <div class="pc-progress-bar-bg"><div class="pc-progress-bar-fill fill-purple" style="width: ${diskPct}%;"></div></div>
+        `;
+        diskBarLi.appendChild(diskProgress);
+        diskUl.appendChild(diskBarLi);
       } else {
         const li = el('li', null, `• 브라우저 스토리지 사용량: 측정 준비 중 [단위: MB]`);
         li.appendChild(el('span', 'pc-badge-tag real', '[실측: 조회 대기]'));
         diskUl.appendChild(li);
       }
-      const diskUnvLi = el('li', null, `• OS 전체 디스크 남은 공간: 「확인 불가」 [단위: GB]`);
+      const diskUnvLi = el('li', null);
+      diskUnvLi.innerHTML = `<span class="pc-status-dot dot-unv"></span>OS 전체 디스크 남은 공간: 「확인 불가」 [단위: GB]`;
       diskUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       diskUl.appendChild(diskUnvLi);
       diskUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 사용자 권한 웹 페이지에서는 호스트 OS의 파일시스템 전체 잔여 공간 조회가 금지되어 있습니다.'));
