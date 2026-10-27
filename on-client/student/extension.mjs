@@ -348,7 +348,7 @@ export function createStudentView() {
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
-      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em 적절히 확장)
+      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em)
       const statusStyle = el('style', null, `
         .pc-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
         .pc-resource-card {
@@ -357,11 +357,13 @@ export function createStudentView() {
           box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .pc-resource-card h4 { margin: 0 0 10px; font-size: 1rem; color: #2357c6; display: flex; align-items: center; justify-content: space-between; }
-        .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; }
+        .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
         .pc-badge-tag.real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
         .pc-badge-tag.demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
         .pc-badge-tag.unv { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .pc-badge-tag.sdp-off { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; font-weight: 700; }
         .pc-unv-reason { font-size: 0.85rem; color: #b91c1c; background: #fff5f5; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
+        .pc-safe-notice { font-size: 0.9rem; color: #2357c6; background: #e7eefc; padding: 10px 14px; border-radius: 6px; margin: 10px 0; line-height: 1.6; border-left: 4px solid #2357c6; }
         .pc-timeline-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; padding: 0; list-style: none; }
         .pc-timeline-item {
           padding: 14px 18px; border: 1px solid var(--border, #d9dde3); border-left: 5px solid #2357c6;
@@ -374,9 +376,9 @@ export function createStudentView() {
         .pc-trend-up { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
         .pc-trend-down { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
         .pc-trend-same { background: #f5f5f5; color: #595959; border: 1px solid #d9d9d9; }
-        .pc-timeline-tabs { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+        .pc-timeline-tabs { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
         .pc-timeline-tabs button {
-          padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 18px;
+          padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 18px;
           border: 1px solid #d9dde3; background: #ffffff; cursor: pointer; transition: all 0.15s ease;
         }
         .pc-timeline-tabs button.active { background: #2357c6; color: #ffffff; border-color: #2357c6; }
@@ -388,10 +390,13 @@ export function createStudentView() {
       const measuredTime = now.toLocaleTimeString('ko-KR', { hour12: false });
       const measuredIso = now.toISOString();
 
-      // 1. CPU (일반 권한 실측: navigator.hardwareConcurrency)
+      // 실측 데이터 (일반 권한)
       const hardwareCores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : null;
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      const netConn = typeof navigator !== 'undefined' && navigator.connection ? navigator.connection : null;
+      const netType = netConn ? (netConn.effectiveType || netConn.type || '일반 대역폭') : '일반 인터넷 연결';
+      const netDownlink = netConn && netConn.downlink ? `${netConn.downlink} Mbps` : '대역폭 확인 완료';
 
-      // 2. Memory (일반 권한 실측: performance.memory)
       let jsHeapUsedMB = null;
       let jsHeapTotalMB = null;
       if (typeof performance !== 'undefined' && performance.memory) {
@@ -399,7 +404,6 @@ export function createStudentView() {
         jsHeapTotalMB = Number((performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(1));
       }
 
-      // 3. Storage estimate (비동기 스토리지 실측)
       if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.estimate === 'function' && typeof window !== 'undefined' && !window._lastStorageEstimate) {
         navigator.storage.estimate().then(est => {
           window._lastStorageEstimate = {
@@ -411,7 +415,7 @@ export function createStudentView() {
       }
       const storageEstimate = (typeof window !== 'undefined' && window._lastStorageEstimate) || null;
 
-      // 스냅샷 객체 생성 및 타임라인 기록 누적 (최신순 unshift)
+      // 스냅샷 객체 생성 및 타임라인 기록 누적
       const currentSnapshot = {
         id: `snap-${Date.now()}`,
         time: measuredTime,
@@ -419,11 +423,21 @@ export function createStudentView() {
         cpuCores: hardwareCores,
         jsHeapMB: jsHeapUsedMB,
         storageUsedMB: storageEstimate ? storageEstimate.usedMB : null,
+        isOnline,
+        netType,
+        netDownlink,
         demoCpuPercent: 24.5,
         demoMemoryMB: 8420,
         demoMemoryTotalMB: 16384,
         demoDiskGB: 142.8,
         demoDiskTotalGB: 512.0,
+        demoNetIp: '192.168.1.45',
+        demoNetGw: '192.168.1.1',
+        demoNetDns: '168.126.63.1',
+        demoWinSysWarn: 3,
+        demoWinSysErr: 1,
+        demoWinAppWarn: 2,
+        demoWinAppErr: 0,
         deviceStatus: devices?.data?.[0]?.status || 'unknown'
       };
 
@@ -433,7 +447,7 @@ export function createStudentView() {
         if (pcStatusHistory.length > 20) pcStatusHistory.pop();
       }
 
-      // 직전 대비 추이(Trend) 계산
+      // 직전 대비 메모리 추이 계산
       let heapTrendText = '직전 기록 없음 (첫 측정 기준점)';
       let heapTrendClass = 'pc-trend-same';
       if (pcStatusHistory.length >= 2 && pcStatusHistory[0].jsHeapMB !== null && pcStatusHistory[1].jsHeapMB !== null) {
@@ -451,15 +465,101 @@ export function createStudentView() {
       }
 
       // ======================================================================
-      // 1. 내 PC 자원 상태 (일반 권한 실측 및 확인 불가 사유)
+      // 1. PC 네트워크·방화벽·Windows 기록 및 SDP 분리 대시보드
+      // ======================================================================
+      const secSection = el('section', 'student-status-card');
+      secSection.appendChild(el('h3', null, '내 PC 네트워크·방화벽·Windows 기록 점검 (일반 권한)'));
+      secSection.appendChild(el('p', 'status-note', '관리자 권한 없이 일반 권한으로 확인 가능한 실측 항목과, 시스템 샌드박스 정책상 조회가 불가능한 항목의 사유를 명시합니다. 방화벽과 보안 설정은 읽기만 시도하며 절대 변경하지 않습니다.'));
+
+      // 필수 주의사항 안내문 (강조)
+      const noticeBox = el('div', 'pc-safe-notice');
+      noticeBox.textContent = '※ Windows System 및 Application 이벤트 기록 건수는 정상적인 운영체제 백그라운드 서비스 및 응용프로그램 동작 통계이며, 침해나 공격 탐지 결과가 아닙니다.';
+      secSection.appendChild(noticeBox);
+
+      const secGrid = el('div', 'pc-resource-grid');
+
+      // (1) 네트워크 구성 카드
+      const netCard = el('div', 'pc-resource-card');
+      netCard.appendChild(el('h4', null, '네트워크 구성'));
+      const netUl = el('ul', 'plain-list');
+      const netOnlineLi = el('li', null, `• 네트워크 연결: ${isOnline ? '온라인 (정상)' : '오프라인'} [잰 시각: ${measuredTime}]`);
+      netOnlineLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+      netUl.appendChild(netOnlineLi);
+      const netTypeLi = el('li', null, `• 연결망 대역폭: ${netType} (${netDownlink}) [잰 시각: ${measuredTime}, 단위: Mbps]`);
+      netTypeLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+      netUl.appendChild(netTypeLi);
+
+      const netUnvLi = el('li', null, `• 로컬 어댑터 IP/MAC/DNS: 「확인 불가」 [단위: IP 주소]`);
+      netUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      netUl.appendChild(netUnvLi);
+      netUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 호스트 OS 로컬 네트워크 어댑터 IP/MAC 테이블 직접 접근이 차단되어 있습니다.'));
+
+      const netDemoLi = el('li', null, `• 설명용 데모 예시: IPv4 192.168.1.45 (게이트웨이: 192.168.1.1, DNS: 168.126.63.1) [잰 시각: 2026-10-27 12:00:00]`);
+      netDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      netUl.appendChild(netDemoLi);
+      netCard.appendChild(netUl);
+      secGrid.appendChild(netCard);
+
+      // (2) 방화벽 설정 카드 (읽기 전용·변경 금지)
+      const fwCard = el('div', 'pc-resource-card');
+      fwCard.appendChild(el('h4', null, '방화벽 설정 (읽기 전용)'));
+      const fwUl = el('ul', 'plain-list');
+      fwUl.appendChild(el('li', null, '• 방화벽 설정 정책: 읽기 전용 (설정 절대 변경 금지 원칙 준수)'));
+      const fwUnvLi = el('li', null, `• Windows Defender 방화벽 상태: 「확인 불가」`);
+      fwUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      fwUl.appendChild(fwUnvLi);
+      fwUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 페이지에서는 Windows 보안 센터 및 방화벽 설정 API 조회가 차단되어 있으며, 설정을 일체 변경하지 않고 읽기 시도만 수행합니다.'));
+
+      const fwDemoLi = el('li', null, `• 설명용 데모 예시: 도메인/개인/공용 프로필 활성화 (인바운드 차단/아웃바운드 허용) [잰 시각: 2026-10-27 12:00:00]`);
+      fwDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      fwUl.appendChild(fwDemoLi);
+      fwCard.appendChild(fwUl);
+      secGrid.appendChild(fwCard);
+
+      // (3) 최근 Windows 기록 카드 (System·Application)
+      const winCard = el('div', 'pc-resource-card');
+      winCard.appendChild(el('h4', null, '최근 Windows 기록 건수'));
+      const winUl = el('ul', 'plain-list');
+      const winUnvLi = el('li', null, `• Windows 이벤트 로그(wevtapi): 「확인 불가」 [단위: 건수]`);
+      winUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
+      winUl.appendChild(winUnvLi);
+      winUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 격리 정책상 OS Windows 이벤트 로그 파일(System/Application)에 직접 접근할 권한이 없습니다.'));
+
+      const winDemoLi = el('li', null, `• 설명용 데모 예시(최근 24시간): System 경고 3건·오류 1건 / Application 경고 2건·오류 0건 [잰 시각: 2026-10-27 12:00:00, 단위: 건]`);
+      winDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
+      winUl.appendChild(winDemoLi);
+      winUl.appendChild(el('li', 'status-note', '※ 이 건수는 일상적 시스템/앱 동작 통계이며, 침해나 공격 탐지 결과가 아닙니다.'));
+      winCard.appendChild(winUl);
+      secGrid.appendChild(winCard);
+
+      // (4) SDP 서버 연결 분리 카드
+      const sdpCard = el('div', 'pc-resource-card');
+      sdpCard.appendChild(el('h4', null, 'SDP 제어 서버 연결 상태'));
+      const sdpUl = el('ul', 'plain-list');
+      const sdpLocalLi = el('li', null, `• 로컬 PC 진단: 정상 완료 (로컬 브라우저 상태 조회 성공) [잰 시각: ${measuredTime}]`);
+      sdpLocalLi.appendChild(el('span', 'pc-badge-tag real', '[실측: 일반 권한]'));
+      sdpUl.appendChild(sdpLocalLi);
+
+      const sdpServerLi = el('li', null, `• 원천 SDP 제어 서버: 「SDP 미연결」 (실제 SDP 서버 미연결 상태)`);
+      sdpServerLi.appendChild(el('span', 'pc-badge-tag sdp-off', '[SDP 미연결]'));
+      sdpUl.appendChild(sdpServerLi);
+      sdpUl.appendChild(el('div', 'pc-unv-reason', '안내: PC 로컬 환경 조회가 성공한 것과 원천 SDP 서버 연결을 섞지 않도록 분리하여 표시합니다. 현재 원천 SDP 통제 엔진은 미연결 상태입니다.'));
+      sdpCard.appendChild(sdpUl);
+      secGrid.appendChild(sdpCard);
+
+      secSection.appendChild(secGrid);
+      container.appendChild(secSection);
+
+      // ======================================================================
+      // 2. 내 PC 자원 상태 (CPU·메모리·디스크 일반 권한 실측)
       // ======================================================================
       const pcSection = el('section', 'student-status-card');
-      pcSection.appendChild(el('h3', null, '내 PC 자원 상태 (일반 권한 실측 및 확인 불가 사유)'));
-      pcSection.appendChild(el('p', 'status-note', '관리자 권한 없이 일반 권한으로 읽은 실측값과, 브라우저 샌드박스 정책상 조회가 불가능한 항목의 사유를 명확히 구분하여 보여줍니다.'));
+      pcSection.appendChild(el('h3', null, '내 PC 자원 상태 (CPU·메모리·디스크)'));
+      pcSection.appendChild(el('p', 'status-note', '관리자 권한 없이 일반 권한으로 읽은 실측값과 확인 불가 항목의 사유를 명시합니다.'));
 
       const grid = el('div', 'pc-resource-grid');
 
-      // (1) CPU 카드
+      // CPU 카드
       const cpuCard = el('div', 'pc-resource-card');
       cpuCard.appendChild(el('h4', null, 'CPU 상태'));
       const cpuUl = el('ul', 'plain-list');
@@ -473,13 +573,13 @@ export function createStudentView() {
       cpuUl.appendChild(cpuUnvLi);
       cpuUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 OS 전체 CPU 점유율 직접 조회가 차단되어 있습니다.'));
       
-      const cpuDemoLi = el('li', null, `• 설명용 데모 예시값: 24.5% [잰 시각: 2026-10-26 17:30:00, 단위: %]`);
+      const cpuDemoLi = el('li', null, `• 설명용 데모 예시값: 24.5% [잰 시각: 2026-10-27 12:00:00, 단위: %]`);
       cpuDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
       cpuUl.appendChild(cpuDemoLi);
       cpuCard.appendChild(cpuUl);
       grid.appendChild(cpuCard);
 
-      // (2) 메모리 카드
+      // 메모리 카드
       const memCard = el('div', 'pc-resource-card');
       memCard.appendChild(el('h4', null, '메모리 상태'));
       const memUl = el('ul', 'plain-list');
@@ -491,20 +591,20 @@ export function createStudentView() {
         const li = el('li', null, `• 브라우저 JS 힙 메모리: 「확인 불가」 [단위: MB]`);
         li.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
         memUl.appendChild(li);
-        memUl.appendChild(el('div', 'pc-unv-reason', '이유: 현재 브라우저가 performance.memory API를 지원하지 않거나 보안상 비활성화되어 있습니다.'));
+        memUl.appendChild(el('div', 'pc-unv-reason', '이유: 현재 브라우저가 performance.memory API를 지원하지 않거나 비활성화되어 있습니다.'));
       }
       const memUnvLi = el('li', null, `• OS 전체 물리 RAM: 「확인 불가」 [단위: MB]`);
       memUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       memUl.appendChild(memUnvLi);
       memUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 환경에서는 시스템 전체 물리 메모리 크기 및 점유량을 직접 읽을 수 있는 권한이 없습니다.'));
 
-      const memDemoLi = el('li', null, `• 설명용 데모 예시값: 8,420 MB / 16,384 MB (51.4%) [잰 시각: 2026-10-26 17:30:00, 단위: MB]`);
+      const memDemoLi = el('li', null, `• 설명용 데모 예시값: 8,420 MB / 16,384 MB (51.4%) [잰 시각: 2026-10-27 12:00:00, 단위: MB]`);
       memDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
       memUl.appendChild(memDemoLi);
       memCard.appendChild(memUl);
       grid.appendChild(memCard);
 
-      // (3) 디스크 카드
+      // 디스크 카드
       const diskCard = el('div', 'pc-resource-card');
       diskCard.appendChild(el('h4', null, '디스크 상태'));
       const diskUl = el('ul', 'plain-list');
@@ -520,9 +620,9 @@ export function createStudentView() {
       const diskUnvLi = el('li', null, `• OS 전체 디스크 남은 공간: 「확인 불가」 [단위: GB]`);
       diskUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       diskUl.appendChild(diskUnvLi);
-      diskUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 사용자 권한 웹 페이지에서는 호스트 OS의 C 드라이브 등 파일시스템 전체 잔여 공간 조회가 금지되어 있습니다.'));
+      diskUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 사용자 권한 웹 페이지에서는 호스트 OS의 파일시스템 전체 잔여 공간 조회가 금지되어 있습니다.'));
 
-      const diskDemoLi = el('li', null, `• 설명용 데모 예시값: 142.8 GB / 512.0 GB 남음 (27.9% 여유) [잰 시각: 2026-10-26 17:30:00, 단위: GB]`);
+      const diskDemoLi = el('li', null, `• 설명용 데모 예시값: 142.8 GB / 512.0 GB 남음 (27.9% 여유) [잰 시각: 2026-10-27 12:00:00, 단위: GB]`);
       diskDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
       diskUl.appendChild(diskDemoLi);
       diskCard.appendChild(diskUl);
@@ -532,7 +632,7 @@ export function createStudentView() {
       container.appendChild(pcSection);
 
       // ======================================================================
-      // 2. PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교
+      // 3. PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교
       // ======================================================================
       const timelineSection = el('section', 'student-status-card');
       timelineSection.appendChild(el('h3', null, 'PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교'));
@@ -542,15 +642,17 @@ export function createStudentView() {
       const filterWrap = el('div', 'pc-timeline-tabs');
       const tabs = [
         { id: 'all', label: '전체 점검 기록' },
-        { id: 'real', label: '실측값 기록만' },
-        { id: 'demo', label: '예시값 비교 기록' }
+        { id: 'sec', label: '네트워크·방화벽·Windows' },
+        { id: 'res', label: 'CPU·메모리 자원' },
+        { id: 'demo', label: '설명용 예시값' }
       ];
       const listContainer = el('ul', 'pc-timeline-list');
 
       function renderTimelineList() {
         listContainer.innerHTML = '';
         const filtered = pcStatusHistory.filter(item => {
-          if (pcStatusFilter === 'real') return item.cpuCores !== null || item.jsHeapMB !== null;
+          if (pcStatusFilter === 'sec') return true;
+          if (pcStatusFilter === 'res') return item.cpuCores !== null || item.jsHeapMB !== null;
           if (pcStatusFilter === 'demo') return true;
           return true;
         });
@@ -569,6 +671,7 @@ export function createStudentView() {
             header.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
           } else {
             header.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
+            header.appendChild(el('span', 'pc-badge-tag sdp-off', '[SDP 미연결]'));
           }
 
           if (idx === 0) {
@@ -579,19 +682,19 @@ export function createStudentView() {
           const desc = el('div', null);
           if (pcStatusFilter === 'demo') {
             desc.innerHTML = `
-              <strong>• [예시] CPU 사용률:</strong> ${snap.demoCpuPercent}% (정상 범위) · 
-              <strong>• [예시] RAM 사용량:</strong> ${snap.demoMemoryMB} MB / ${snap.demoMemoryTotalMB} MB · 
-              <strong>• [예시] 디스크 남은 공간:</strong> ${snap.demoDiskGB} GB 여유<br>
+              <strong>• [예시] 네트워크:</strong> IPv4 ${snap.demoNetIp} (GW: ${snap.demoNetGw}) · 
+              <strong>• [예시] Windows 기록:</strong> System(경고 ${snap.demoWinSysWarn}, 오류 ${snap.demoWinSysErr}) / App(경고 ${snap.demoWinAppWarn}, 오류 ${snap.demoWinAppErr}) · 
+              <strong>• [예시] CPU:</strong> ${snap.demoCpuPercent}% · <strong>RAM:</strong> ${snap.demoMemoryMB} MB<br>
               <small class="muted" style="color: #8c8c8c;">※ 설명용 가상 예시 데이터이며, 실제 호스트 시스템 자원 측정값이 아닙니다.</small>
             `;
           } else {
             const coresText = snap.cpuCores ? `${snap.cpuCores} Cores 실측` : '코어 확인 불가';
             const heapText = snap.jsHeapMB ? `${snap.jsHeapMB} MB 실측` : '힙 확인 불가';
-            const devText = snap.deviceStatus === 'compliant' ? '보안 기준 충족(정상)' : snap.deviceStatus;
+            const netStatus = snap.isOnline ? '온라인 연결 양호' : '오프라인';
             desc.innerHTML = `
-              <strong>• 실측 CPU 코어:</strong> ${coresText} · 
-              <strong>• 실측 JS 힙 메모리:</strong> ${heapText} · 
-              <strong>• 기기 보안 상태:</strong> ${devText}<br>
+              <strong>• 실측 네트워크:</strong> ${netStatus} (${snap.netType}) · 
+              <strong>• 실측 CPU/메모리:</strong> ${coresText}, ${heapText} · 
+              <strong>• 원천 SDP 통제:</strong> <span style="color:#cf1322;font-weight:bold;">SDP 미연결 (로컬 조회와 분리)</span><br>
               <strong>• 추이 비교 분석 및 상태 설명:</strong> ${idx === 0 ? heapTrendText : '이전 측정 기록'} (브라우저 일반 권한 보안 샌드박스 내 안정적 작동 중)
             `;
           }
@@ -617,7 +720,7 @@ export function createStudentView() {
       container.appendChild(timelineSection);
 
       // ======================================================================
-      // 3. 기존 알림 상태 (보존)
+      // 4. 기존 알림 상태 (보존)
       // ======================================================================
       const notifSection = el('section', 'student-status-card');
       notifSection.appendChild(el('h3', null, '알림 상태'));
@@ -631,7 +734,7 @@ export function createStudentView() {
       container.appendChild(notifSection);
 
       // ======================================================================
-      // 4. 기존 기기 점검 상태 (보존)
+      // 5. 기존 기기 점검 상태 (보존)
       // ======================================================================
       const devSection = el('section', 'student-status-card');
       devSection.appendChild(el('h3', null, '기기 점검 상태'));
@@ -655,7 +758,7 @@ export function createStudentView() {
       container.appendChild(devSection);
 
       // ======================================================================
-      // 5. 기존 세션 점검 상태 (보존)
+      // 6. 기존 세션 점검 상태 (보존)
       // ======================================================================
       const sessSection = el('section', 'student-status-card');
       sessSection.appendChild(el('h3', null, '세션 점검 상태'));
@@ -680,7 +783,7 @@ export function createStudentView() {
       container.appendChild(sessSection);
 
       // ======================================================================
-      // 6. 기존 도움정보 (진단 정보) (보존)
+      // 7. 기존 도움정보 (진단 정보) (보존)
       // ======================================================================
       const diagSection = el('section', 'student-status-card');
       diagSection.appendChild(el('h3', null, '도움정보 (진단 정보)'));
