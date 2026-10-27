@@ -1,0 +1,31 @@
+{
+  "appName": "bankhar_b",
+  "theme": "light",
+  "accentColor": "#2357c6",
+  "layoutMode": "timeline",
+  "keyFeaturesPriority": [
+    {
+      "id": "events-timeline",
+      "name": "시각순 보안 기록 타임라인 및 퀵 필터",
+      "slot": "renderEvents",
+      "priority": 1
+    },
+    {
+      "id": "pc-security-status",
+      "name": "내 PC 보안·자원 진단 및 시각순 추이 비교",
+      "slot": "renderStatus",
+      "priority": 2
+    },
+    {
+      "id": "action-transition",
+      "name": "4단계 조치 상태 전이 타임라인 게이지",
+      "slot": "renderAction",
+      "priority": 3
+    }
+  ],
+  "accessibility": {
+    "keyboardNavigation": true,
+    "focusRing": "3px solid #f5b400",
+    "highContrast": true
+  }
+}

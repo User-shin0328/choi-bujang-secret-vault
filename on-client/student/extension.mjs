@@ -43,6 +43,40 @@ export function createStudentView() {
       const currentMode = (me?.mode) || (devices?.mode) || (sessions?.mode) || 'unknown';
       container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[currentMode] || '확인 불가'}`));
 
+      // 핵심 3대 기능 최상단 우선 노출 및 빠른 이동 내비게이션
+      const navBox = el('div', 'student-feature-quick-nav');
+      navBox.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 8px; padding: 12px 16px; margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em;';
+      const navTitle = el('div', null);
+      navTitle.style.cssText = 'font-weight: 700; color: #2357c6; font-size: 0.95rem; margin-bottom: 6px;';
+      navTitle.textContent = '★ bankhar_b 핵심 3대 기능 우선 안내';
+      navBox.appendChild(navTitle);
+
+      const navUl = el('ul', 'plain-list');
+      navUl.style.cssText = 'font-size: 0.88rem; margin: 0; padding: 0; list-style: none;';
+      navUl.appendChild(el('li', null, '① [보안 기록] 탭: 시각순 사건 타임라인 및 4종 퀵 필터 (renderEvents)'));
+      navUl.appendChild(el('li', null, '② [보호 현황] 아래: 내 PC 보안·네트워크·자원 진단 및 추이 (renderStatus)'));
+      navUl.appendChild(el('li', null, '③ [보안 기록] 탭: 4단계 조치 상태 전이 타임라인 게이지 (renderAction)'));
+      navBox.appendChild(navUl);
+
+      const jumpBtn = el('button', 'btn', '⬇ 내 PC 상태 진단 영역으로 바로 이동', {
+        type: 'button',
+        tabindex: '0',
+        'aria-label': '내 PC 상태 진단 영역으로 바로 이동 (Enter 또는 Space 키)'
+      });
+      jumpBtn.style.cssText = 'margin-top: 10px; font-size: 0.85rem; padding: 6px 14px; font-weight: 600; cursor: pointer;';
+      jumpBtn.onclick = () => {
+        const target = document.getElementById('student-status') || document.querySelector('[data-student-section="status"]');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      jumpBtn.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          jumpBtn.click();
+        }
+      };
+      navBox.appendChild(jumpBtn);
+      container.appendChild(navBox);
+
       if (!me || me.status === 'loading') {
         container.appendChild(el('p', 'student-status-loading', '불러오는 중'));
         return container;
@@ -112,6 +146,12 @@ export function createStudentView() {
       const modeLabel = MODE_LABELS[mode || 'unknown'] || '확인 불가';
       const isDemo = mode === 'demo';
       const sourceTag = isDemo ? '[예시: 설명용 데모 데이터]' : '[실측: 로컬 시스템 측정값]';
+
+      // 핵심 기능 1 최상단 안내 뱃지
+      const eventHeader = el('div', 'student-feature-header');
+      eventHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
+      eventHeader.textContent = '★ [핵심 기능 ①] 시각순 보안 기록 타임라인 및 4종 퀵 필터';
+      container.appendChild(eventHeader);
       
       // 타임라인 가독성 스타일 블록 (줄간격 line-height: 1.75 및 글간격 letter-spacing: 0.025em 적절히 확장)
       const timelineStyle = el('style', null, `
@@ -348,8 +388,30 @@ export function createStudentView() {
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
-      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em)
+      // 타임라인 및 PC 자원 가독성 스타일 블록 (줄간격 line-height: 1.75~1.8, 글간격 letter-spacing: 0.025em, 키보드 접근성 강화)
       const statusStyle = el('style', null, `
+        :focus-visible { outline: 3px solid #f5b400 !important; outline-offset: 2px !important; }
+        .pc-top-panel {
+          background: #ffffff; border: 2px solid #2357c6; border-radius: 8px; padding: 16px 20px;
+          margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);
+        }
+        .pc-top-header { font-size: 1.05rem; font-weight: 700; color: #2357c6; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .pc-btn-group { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+        .pc-refresh-btn {
+          background: #2357c6; color: #ffffff; font-weight: 700; font-size: 0.9rem; padding: 8px 18px;
+          border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .pc-refresh-btn:hover { background: #1a44a1; }
+        .pc-refresh-btn:disabled { background: #8fa5d6; cursor: not-allowed; }
+        .pc-loading-indicator { font-size: 0.88rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; }
+        .pc-loading-indicator.idle { background: #e7eefc; color: #2357c6; border: 1px solid #b8d0fc; }
+        .pc-loading-indicator.busy { background: #fffbe6; color: #d46b08; border: 1px solid #ffe58f; animation: pulse 1s infinite alternate; }
+        .pc-loading-indicator.done { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+        @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+        .pc-failure-guide {
+          background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px; padding: 12px 14px;
+          margin-top: 10px; font-size: 0.88rem; line-height: 1.6; color: #434343;
+        }
         .pc-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
         .pc-resource-card {
           padding: 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
@@ -463,6 +525,59 @@ export function createStudentView() {
           heapTrendClass = 'pc-trend-same';
         }
       }
+
+      // ======================================================================
+      // 0. 핵심 기능 ② 상단 컨트롤 패널: 다시 조회 버튼, 대기 표시, 실패 시 대응 안내
+      // ======================================================================
+      const topPanel = el('div', 'pc-top-panel');
+      const topHeader = el('div', 'pc-top-header');
+      topHeader.appendChild(el('span', null, '★ [핵심 기능 ②] 내 PC 보안·자원 진단 및 시각순 추이 비교'));
+      topHeader.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
+      topPanel.appendChild(topHeader);
+
+      const btnGroup = el('div', 'pc-btn-group');
+      const refreshBtn = el('button', 'btn pc-refresh-btn', '🔄 내 PC 상태 다시 조회', {
+        type: 'button',
+        tabindex: '0',
+        'aria-label': '내 PC 상태 다시 조회 (Enter 또는 Space 키로 실행)'
+      });
+      const loadingIndicator = el('span', 'pc-loading-indicator idle', '상태: 최신 실측값 정상 반영됨');
+
+      refreshBtn.onclick = () => {
+        refreshBtn.disabled = true;
+        loadingIndicator.className = 'pc-loading-indicator busy';
+        loadingIndicator.textContent = '조회 중… ⏳ 실측 자원 재측정';
+        setTimeout(() => {
+          refreshBtn.disabled = false;
+          loadingIndicator.className = 'pc-loading-indicator done';
+          loadingIndicator.textContent = '조회 완료 (로컬 실측 시각 갱신)';
+          if (typeof renderTimelineList === 'function') renderTimelineList();
+        }, 350);
+      };
+      refreshBtn.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          refreshBtn.click();
+        }
+      };
+      btnGroup.appendChild(refreshBtn);
+      btnGroup.appendChild(loadingIndicator);
+      topPanel.appendChild(btnGroup);
+
+      // 실패 및 조회 제한 대응 가이드 박스 (예시값 대체 금지 원칙 준수)
+      const failGuide = el('div', 'pc-failure-guide');
+      const failTitle = el('strong', null, '⚠ [조회 실패 및 접근 제한 항목 안내 — 예시값 대체 금지]');
+      failTitle.style.color = '#cf1322';
+      failGuide.appendChild(failTitle);
+      const failList = el('ul', 'plain-list');
+      failList.style.cssText = 'margin: 6px 0 0; padding-left: 16px; list-style: disc;';
+      failList.appendChild(el('li', null, '실패/확인 불가 항목: Windows Defender 방화벽, 전체 CPU 점유율, 물리 RAM 총량, C: 디스크 잔여량, Windows 이벤트 로그'));
+      failList.appendChild(el('li', null, '이유: 브라우저 보안 샌드박스 정책으로 OS 하드웨어/레지스트리 직접 조회가 차단됨 (임의 예시값으로 정상 위장 금지)'));
+      failList.appendChild(el('li', null, '다음에 할 일: 네트워크 단절 시 연결을 점검하고, 위의 [🔄 내 PC 상태 다시 조회] 버튼(또는 키보드 Enter)을 눌러 재시도하세요.'));
+      failGuide.appendChild(failList);
+      topPanel.appendChild(failGuide);
+
+      container.appendChild(topPanel);
 
       // ======================================================================
       // 1. PC 네트워크·방화벽·Windows 기록 및 SDP 분리 대시보드
@@ -1151,6 +1266,12 @@ export function createStudentView() {
         'data-student-section': 'action',
         'data-student-action-status': curStatus
       });
+
+      // 핵심 기능 3 최상단 안내 뱃지
+      const actionHeader = el('div', 'student-feature-header');
+      actionHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
+      actionHeader.textContent = '★ [핵심 기능 ③] 4단계 조치 상태 전이 타임라인 게이지 및 원천 효과 분리';
+      container.appendChild(actionHeader);
 
       if (event && event.id) container.setAttribute('data-student-action-event', event.id);
       if (receipt && receipt.requestId) container.setAttribute('data-student-action-request', receipt.requestId);
