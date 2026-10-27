@@ -43,38 +43,56 @@ export function createStudentView() {
       const currentMode = (me?.mode) || (devices?.mode) || (sessions?.mode) || 'unknown';
       container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[currentMode] || '확인 불가'}`));
 
-      // 핵심 3대 기능 최상단 우선 노출 및 빠른 이동 내비게이션
+      // 핵심 3대 기능 최상단 우선 안내 배너 및 원클릭 탭 전환 내비게이션
       const navBox = el('div', 'student-feature-quick-nav');
-      navBox.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 8px; padding: 12px 16px; margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em;';
+      navBox.style.cssText = 'background: #e7eefc; border: 2px solid #2357c6; border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);';
       const navTitle = el('div', null);
-      navTitle.style.cssText = 'font-weight: 700; color: #2357c6; font-size: 0.95rem; margin-bottom: 6px;';
-      navTitle.textContent = '★ bankhar_b 핵심 3대 기능 우선 안내';
+      navTitle.style.cssText = 'font-weight: 700; color: #2357c6; font-size: 1rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;';
+      navTitle.innerHTML = '<span>★ bankhar_b 핵심 3대 기능 구현 내비게이션</span><span style="font-size:0.8rem;background:#2357c6;color:#fff;padding:2px 8px;border-radius:4px;">작전: 기록 타임라인형</span>';
       navBox.appendChild(navTitle);
 
       const navUl = el('ul', 'plain-list');
-      navUl.style.cssText = 'font-size: 0.88rem; margin: 0; padding: 0; list-style: none;';
+      navUl.style.cssText = 'font-size: 0.9rem; margin: 0 0 12px; padding: 0; list-style: none;';
       navUl.appendChild(el('li', null, '① [보안 기록] 탭: 시각순 사건 타임라인 및 4종 퀵 필터 (renderEvents)'));
       navUl.appendChild(el('li', null, '② [보호 현황] 아래: 내 PC 보안·네트워크·자원 진단 및 추이 (renderStatus)'));
       navUl.appendChild(el('li', null, '③ [보안 기록] 탭: 4단계 조치 상태 전이 타임라인 게이지 (renderAction)'));
       navBox.appendChild(navUl);
 
-      const jumpBtn = el('button', 'btn', '⬇ 내 PC 상태 진단 영역으로 바로 이동', {
-        type: 'button',
-        tabindex: '0',
-        'aria-label': '내 PC 상태 진단 영역으로 바로 이동 (Enter 또는 Space 키)'
-      });
-      jumpBtn.style.cssText = 'margin-top: 10px; font-size: 0.85rem; padding: 6px 14px; font-weight: 600; cursor: pointer;';
-      jumpBtn.onclick = () => {
-        const target = document.getElementById('student-status') || document.querySelector('[data-student-section="status"]');
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const btnRow = el('div', 'student-nav-btn-row');
+      btnRow.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;';
+
+      const createNavBtn = (label, tabId, slotId, ariaLabel) => {
+        const btn = el('button', 'btn', label, {
+          type: 'button',
+          tabindex: '0',
+          'aria-label': ariaLabel
+        });
+        btn.style.cssText = 'font-size: 0.85rem; padding: 8px 14px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #2357c6; background: #ffffff; color: #2357c6; transition: all 0.15s ease;';
+        btn.onmouseover = () => { btn.style.background = '#2357c6'; btn.style.color = '#ffffff'; };
+        btn.onmouseout = () => { btn.style.background = '#ffffff'; btn.style.color = '#2357c6'; };
+        btn.onclick = () => {
+          if (tabId) {
+            const tabBtn = document.getElementById(tabId);
+            if (tabBtn) tabBtn.click();
+          }
+          setTimeout(() => {
+            const target = document.getElementById(slotId) || document.querySelector(`[data-student-section="${slotId.replace('student-', '')}"]`);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        };
+        btn.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            btn.click();
+          }
+        };
+        return btn;
       };
-      jumpBtn.onkeydown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          jumpBtn.click();
-        }
-      };
-      navBox.appendChild(jumpBtn);
+
+      btnRow.appendChild(createNavBtn('① [보안 기록] 사건 타임라인 바로보기 ➔', 'tab-records', 'student-events', '보안 기록 탭으로 이동하여 사건 타임라인 보기'));
+      btnRow.appendChild(createNavBtn('② [보호 현황] 내 PC 진단 바로보기 ⬇', 'tab-protection', 'student-status', '보호 현황 탭의 내 PC 상태 진단 영역으로 스크롤'));
+      btnRow.appendChild(createNavBtn('③ [보안 기록] 4단계 조치 게이지 바로보기 ➔', 'tab-records', 'student-action', '보안 기록 탭으로 이동하여 조치 상태 게이지 보기'));
+      navBox.appendChild(btnRow);
       container.appendChild(navBox);
 
       if (!me || me.status === 'loading') {
@@ -218,23 +236,37 @@ export function createStudentView() {
       const sortedEvents = [...eventsList].sort((a, b) => (b.at ? Date.parse(b.at) : 0) - (a.at ? Date.parse(a.at) : 0));
       let currentKindFilter = 'all', currentAppFilter = 'all', currentAccessFilter = 'all', selectedEventId = null;
 
-      // 작전: 기록 타임라인형 - 종류별 거르기 퀵 탭
+      // 작전: 기록 타임라인형 - 종류별 거르기 4종 퀵 필터 탭
       const quickTabs = el('div', 'student-timeline-quick-tabs');
       const tabOptions = [
-        { label: '전체 기록', val: 'all' },
-        { label: '인증 사건', val: 'auth' },
-        { label: '업무 앱 접근', val: 'access' },
-        { label: 'XDR 경보', val: 'alert' }
+        { label: '전체 기록 (All)', val: 'all' },
+        { label: '업무 앱 접속 (Access)', val: 'access' },
+        { label: 'XDR 보안 경보 (XDR)', val: 'xdr' },
+        { label: '접근 차단·경고 (Blocked)', val: 'blocked' }
       ];
       const quickButtons = [];
       tabOptions.forEach(tab => {
-        const btn = el('button', `btn btn-tab ${tab.val === 'all' ? 'active' : ''}`, tab.label, { type: 'button' });
+        const btn = el('button', `btn btn-tab ${tab.val === 'all' ? 'active' : ''}`, tab.label, {
+          type: 'button',
+          tabindex: '0',
+          'aria-label': `${tab.label} 필터 적용`
+        });
         btn.onclick = () => {
           currentKindFilter = tab.val;
-          kindSelect.value = tab.val;
+          if (typeof kindSelect !== 'undefined' && kindSelect) {
+            if (tab.val === 'all' || tab.val === 'access' || tab.val === 'xdr') {
+              kindSelect.value = tab.val;
+            }
+          }
           quickButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           updateList();
+        };
+        btn.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            btn.click();
+          }
         };
         quickButtons.push(btn);
         quickTabs.appendChild(btn);
@@ -324,7 +356,9 @@ export function createStudentView() {
 
       function updateList() {
         const filtered = sortedEvents.filter(ev => {
-          if (currentKindFilter !== 'all' && ev.kind !== currentKindFilter) return false;
+          if (currentKindFilter === 'access' && ev.kind !== 'access') return false;
+          if (currentKindFilter === 'xdr' && ev.kind !== 'xdr') return false;
+          if (currentKindFilter === 'blocked' && (ev.state?.access !== 'denied' && ev.state?.device !== 'noncompliant')) return false;
           if (currentAppFilter !== 'all' && (ev.appId || '') !== currentAppFilter) return false;
           if (currentAccessFilter !== 'all' && (ev.state?.access || 'unknown') !== currentAccessFilter) return false;
           return true;
@@ -361,9 +395,8 @@ export function createStudentView() {
         currentKindFilter = e.target.value;
         quickButtons.forEach(b => {
           if ((b.textContent.includes('전체') && e.target.value === 'all') ||
-              (b.textContent.includes('인증') && e.target.value === 'auth') ||
-              (b.textContent.includes('접근') && e.target.value === 'access') ||
-              (b.textContent.includes('경보') && e.target.value === 'alert')) {
+              (b.textContent.includes('접속') && e.target.value === 'access') ||
+              (b.textContent.includes('XDR') && e.target.value === 'xdr')) {
             b.classList.add('active');
           } else {
             b.classList.remove('active');
@@ -1215,6 +1248,24 @@ export function createStudentView() {
         'data-student-action-status': curStatus
       });
 
+      // 4단계 게이지 전용 가독성 스타일
+      const actionStyle = el('style', null, `
+        .student-action-timeline-gauge { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
+        .student-action-step {
+          flex: 1 1 180px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d9dde3;
+          background: #f8fafc; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
+          transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .student-action-step.step-completed { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+        .student-action-step.step-active { border-color: #1976d2; background: #e3f2fd; color: #0d47a1; box-shadow: 0 0 0 3px rgba(25,118,210,0.18); }
+        .student-action-step.step-pending { border-color: #e2e8f0; background: #ffffff; color: #94a3b8; }
+        .student-action-badge-row { margin: 10px 0 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .student-action-badge-row .student-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+        .student-action-badge-row .badge-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+        .student-action-badge-row .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+      `);
+      container.appendChild(actionStyle);
+
       // 핵심 기능 3 최상단 안내 뱃지
       const actionHeader = el('div', 'student-feature-header');
       actionHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
@@ -1226,7 +1277,7 @@ export function createStudentView() {
 
       container.appendChild(el('h4', 'student-action-title', '보안 조치 요청 상태'));
 
-      // [핵심 기능 2] 4단계 조치 상태 전이 타임라인 게이지 UI
+      // 4단계 조치 상태 전이 타임라인 게이지 UI
       const steps = [
         { id: 'proposal', label: '1. 조치 제안' },
         { id: 'approval', label: '2. 사용자 확인' },
@@ -1243,12 +1294,21 @@ export function createStudentView() {
       const timelineWrap = el('div', 'student-action-timeline-gauge');
       steps.forEach((s, idx) => {
         let stepClass = 'step-pending';
-        if (idx < currentStepIndex) stepClass = 'step-completed';
-        else if (idx === currentStepIndex && curStatus !== 'idle') stepClass = 'step-active';
+        let prefixIcon = '○';
+        let stateSuffix = '(대기)';
+        if (idx < currentStepIndex) {
+          stepClass = 'step-completed';
+          prefixIcon = '✔';
+          stateSuffix = '(완료)';
+        } else if (idx === currentStepIndex && curStatus !== 'idle') {
+          stepClass = 'step-active';
+          prefixIcon = '⏳';
+          stateSuffix = '(진행 중)';
+        }
 
         const stepEl = el('div', `student-action-step ${stepClass}`);
-        stepEl.appendChild(el('span', 'step-number', `[${idx + 1}] `));
-        stepEl.appendChild(el('span', 'step-label', s.label));
+        stepEl.appendChild(el('span', 'step-number', `${prefixIcon} [${idx + 1}] `));
+        stepEl.appendChild(el('span', 'step-label', `${s.label} ${stateSuffix}`));
         timelineWrap.appendChild(stepEl);
       });
       container.appendChild(timelineWrap);
