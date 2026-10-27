@@ -477,7 +477,7 @@ export function createStudentView() {
       }
       const storageEstimate = (typeof window !== 'undefined' && window._lastStorageEstimate) || null;
 
-      // 스냅샷 객체 생성 및 타임라인 기록 누적
+      // 스냅샷 객체 생성 및 타임라인 기록 누적 (순수 실측값 및 확인 불가 상태만 기록)
       const currentSnapshot = {
         id: `snap-${Date.now()}`,
         time: measuredTime,
@@ -488,18 +488,6 @@ export function createStudentView() {
         isOnline,
         netType,
         netDownlink,
-        demoCpuPercent: 24.5,
-        demoMemoryMB: 8420,
-        demoMemoryTotalMB: 16384,
-        demoDiskGB: 142.8,
-        demoDiskTotalGB: 512.0,
-        demoNetIp: '192.168.1.45',
-        demoNetGw: '192.168.1.1',
-        demoNetDns: '168.126.63.1',
-        demoWinSysWarn: 3,
-        demoWinSysErr: 1,
-        demoWinAppWarn: 2,
-        demoWinAppErr: 0,
         deviceStatus: devices?.data?.[0]?.status || 'unknown'
       };
 
@@ -608,10 +596,6 @@ export function createStudentView() {
       netUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       netUl.appendChild(netUnvLi);
       netUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 호스트 OS 로컬 네트워크 어댑터 IP/MAC 테이블 직접 접근이 차단되어 있습니다.'));
-
-      const netDemoLi = el('li', null, `• 설명용 데모 예시: IPv4 192.168.1.45 (게이트웨이: 192.168.1.1, DNS: 168.126.63.1) [잰 시각: 2026-10-27 12:00:00]`);
-      netDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      netUl.appendChild(netDemoLi);
       netCard.appendChild(netUl);
       secGrid.appendChild(netCard);
 
@@ -624,10 +608,6 @@ export function createStudentView() {
       fwUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       fwUl.appendChild(fwUnvLi);
       fwUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 페이지에서는 Windows 보안 센터 및 방화벽 설정 API 조회가 차단되어 있으며, 설정을 일체 변경하지 않고 읽기 시도만 수행합니다.'));
-
-      const fwDemoLi = el('li', null, `• 설명용 데모 예시: 도메인/개인/공용 프로필 활성화 (인바운드 차단/아웃바운드 허용) [잰 시각: 2026-10-27 12:00:00]`);
-      fwDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      fwUl.appendChild(fwDemoLi);
       fwCard.appendChild(fwUl);
       secGrid.appendChild(fwCard);
 
@@ -639,11 +619,7 @@ export function createStudentView() {
       winUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       winUl.appendChild(winUnvLi);
       winUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 격리 정책상 OS Windows 이벤트 로그 파일(System/Application)에 직접 접근할 권한이 없습니다.'));
-
-      const winDemoLi = el('li', null, `• 설명용 데모 예시(최근 24시간): System 경고 3건·오류 1건 / Application 경고 2건·오류 0건 [잰 시각: 2026-10-27 12:00:00, 단위: 건]`);
-      winDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      winUl.appendChild(winDemoLi);
-      winUl.appendChild(el('li', 'status-note', '※ 이 건수는 일상적 시스템/앱 동작 통계이며, 침해나 공격 탐지 결과가 아닙니다.'));
+      winUl.appendChild(el('li', 'status-note', '※ Windows System 및 Application 이벤트 기록 건수는 정상적인 운영체제 백그라운드 서비스 및 응용프로그램 동작 통계이며, 침해나 공격 탐지 결과가 아닙니다.'));
       winCard.appendChild(winUl);
       secGrid.appendChild(winCard);
 
@@ -687,10 +663,6 @@ export function createStudentView() {
       cpuUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       cpuUl.appendChild(cpuUnvLi);
       cpuUl.appendChild(el('div', 'pc-unv-reason', '이유: 웹 브라우저 샌드박스 보안 정책상 일반 권한 자바스크립트는 OS 전체 CPU 점유율 직접 조회가 차단되어 있습니다.'));
-      
-      const cpuDemoLi = el('li', null, `• 설명용 데모 예시값: 24.5% [잰 시각: 2026-10-27 12:00:00, 단위: %]`);
-      cpuDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      cpuUl.appendChild(cpuDemoLi);
       cpuCard.appendChild(cpuUl);
       grid.appendChild(cpuCard);
 
@@ -712,10 +684,6 @@ export function createStudentView() {
       memUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       memUl.appendChild(memUnvLi);
       memUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 권한 웹 환경에서는 시스템 전체 물리 메모리 크기 및 점유량을 직접 읽을 수 있는 권한이 없습니다.'));
-
-      const memDemoLi = el('li', null, `• 설명용 데모 예시값: 8,420 MB / 16,384 MB (51.4%) [잰 시각: 2026-10-27 12:00:00, 단위: MB]`);
-      memDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      memUl.appendChild(memDemoLi);
       memCard.appendChild(memUl);
       grid.appendChild(memCard);
 
@@ -736,10 +704,6 @@ export function createStudentView() {
       diskUnvLi.appendChild(el('span', 'pc-badge-tag unv', '[확인 불가]'));
       diskUl.appendChild(diskUnvLi);
       diskUl.appendChild(el('div', 'pc-unv-reason', '이유: 일반 사용자 권한 웹 페이지에서는 호스트 OS의 파일시스템 전체 잔여 공간 조회가 금지되어 있습니다.'));
-
-      const diskDemoLi = el('li', null, `• 설명용 데모 예시값: 142.8 GB / 512.0 GB 남음 (27.9% 여유) [잰 시각: 2026-10-27 12:00:00, 단위: GB]`);
-      diskDemoLi.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-      diskUl.appendChild(diskDemoLi);
       diskCard.appendChild(diskUl);
       grid.appendChild(diskCard);
 
@@ -753,13 +717,12 @@ export function createStudentView() {
       timelineSection.appendChild(el('h3', null, 'PC 상태 점검 기록 타임라인 및 직전 대비 추이 비교'));
       timelineSection.appendChild(el('p', 'status-note', '조회 시각 순서대로 기록된 스냅샷 타임라인과 직전 점검 대비 자원/상태 추이 비교 및 설명을 제공합니다.'));
 
-      // 퀵 필터 탭
+      // 퀵 필터 탭 (순수 실측값 및 자원 분류)
       const filterWrap = el('div', 'pc-timeline-tabs');
       const tabs = [
         { id: 'all', label: '전체 점검 기록' },
         { id: 'sec', label: '네트워크·방화벽·Windows' },
-        { id: 'res', label: 'CPU·메모리 자원' },
-        { id: 'demo', label: '설명용 예시값' }
+        { id: 'res', label: 'CPU·메모리 자원' }
       ];
       const listContainer = el('ul', 'pc-timeline-list');
 
@@ -768,7 +731,6 @@ export function createStudentView() {
         const filtered = pcStatusHistory.filter(item => {
           if (pcStatusFilter === 'sec') return true;
           if (pcStatusFilter === 'res') return item.cpuCores !== null || item.jsHeapMB !== null;
-          if (pcStatusFilter === 'demo') return true;
           return true;
         });
 
@@ -781,13 +743,8 @@ export function createStudentView() {
           const item = el('li', 'pc-timeline-item');
           const header = el('div', 'pc-timeline-header');
           header.appendChild(el('span', 'pc-timeline-time', `[점검 시각: ${snap.time}]`));
-          
-          if (pcStatusFilter === 'demo') {
-            header.appendChild(el('span', 'pc-badge-tag demo', '[예시: 설명용 데모 데이터]'));
-          } else {
-            header.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
-            header.appendChild(el('span', 'pc-badge-tag sdp-off', '[SDP 미연결]'));
-          }
+          header.appendChild(el('span', 'pc-badge-tag real', '[실측: 로컬 일반 권한]'));
+          header.appendChild(el('span', 'pc-badge-tag sdp-off', '[SDP 미연결]'));
 
           if (idx === 0) {
             header.appendChild(el('span', `pc-trend-badge ${heapTrendClass}`, `메모리 추이: ${heapTrendText}`));
@@ -795,24 +752,15 @@ export function createStudentView() {
           item.appendChild(header);
 
           const desc = el('div', null);
-          if (pcStatusFilter === 'demo') {
-            desc.innerHTML = `
-              <strong>• [예시] 네트워크:</strong> IPv4 ${snap.demoNetIp} (GW: ${snap.demoNetGw}) · 
-              <strong>• [예시] Windows 기록:</strong> System(경고 ${snap.demoWinSysWarn}, 오류 ${snap.demoWinSysErr}) / App(경고 ${snap.demoWinAppWarn}, 오류 ${snap.demoWinAppErr}) · 
-              <strong>• [예시] CPU:</strong> ${snap.demoCpuPercent}% · <strong>RAM:</strong> ${snap.demoMemoryMB} MB<br>
-              <small class="muted" style="color: #8c8c8c;">※ 설명용 가상 예시 데이터이며, 실제 호스트 시스템 자원 측정값이 아닙니다.</small>
-            `;
-          } else {
-            const coresText = snap.cpuCores ? `${snap.cpuCores} Cores 실측` : '코어 확인 불가';
-            const heapText = snap.jsHeapMB ? `${snap.jsHeapMB} MB 실측` : '힙 확인 불가';
-            const netStatus = snap.isOnline ? '온라인 연결 양호' : '오프라인';
-            desc.innerHTML = `
-              <strong>• 실측 네트워크:</strong> ${netStatus} (${snap.netType}) · 
-              <strong>• 실측 CPU/메모리:</strong> ${coresText}, ${heapText} · 
-              <strong>• 원천 SDP 통제:</strong> <span style="color:#cf1322;font-weight:bold;">SDP 미연결 (로컬 조회와 분리)</span><br>
-              <strong>• 추이 비교 분석 및 상태 설명:</strong> ${idx === 0 ? heapTrendText : '이전 측정 기록'} (브라우저 일반 권한 보안 샌드박스 내 안정적 작동 중)
-            `;
-          }
+          const coresText = snap.cpuCores ? `${snap.cpuCores} Cores 실측` : '코어 확인 불가';
+          const heapText = snap.jsHeapMB ? `${snap.jsHeapMB} MB 실측` : '힙 확인 불가';
+          const netStatus = snap.isOnline ? '온라인 연결 양호' : '오프라인';
+          desc.innerHTML = `
+            <strong>• 실측 네트워크:</strong> ${netStatus} (${snap.netType}) · 
+            <strong>• 실측 CPU/메모리:</strong> ${coresText}, ${heapText} · 
+            <strong>• 원천 SDP 통제:</strong> <span style="color:#cf1322;font-weight:bold;">SDP 미연결 (로컬 조회와 분리)</span><br>
+            <strong>• 추이 비교 분석 및 상태 설명:</strong> ${idx === 0 ? heapTrendText : '이전 측정 기록'} (브라우저 일반 권한 보안 샌드박스 내 안정적 작동 중)
+          `;
           item.appendChild(desc);
           listContainer.appendChild(item);
         });
