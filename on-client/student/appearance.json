@@ -1,7 +1,7 @@
 {
   "appName": "bankhar_b",
-  "theme": "light",
-  "accentColor": "#2357c6",
+  "theme": "dark",
+  "accentColor": "#0284c7",
   "layoutMode": "timeline",
   "keyFeaturesPriority": [
     {
