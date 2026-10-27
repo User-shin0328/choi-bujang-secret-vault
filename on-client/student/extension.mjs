@@ -40,168 +40,22 @@ export function createStudentView() {
   return {
     renderIdentity({ me, devices, sessions } = {}) {
       const container = el('div', 'student-identity-view', null, { 'data-student-section': 'identity' });
-
-      // ======================================================================
-      // ★ [CYBER SOC COMMAND CENTER] 글로벌 보안 관제화면 다크 테마 주입 ★
-      // ======================================================================
-      const socGlobalStyle = el('style', null, `
-        /* 전체 다크 관제실 테마 오버라이드 */
-        body {
-          background: #070b14 !important;
-          color: #e2e8f0 !important;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif !important;
-        }
-        .topbar {
-          background: #0b1120 !important;
-          border-bottom: 2px solid #0284c7 !important;
-          box-shadow: 0 4px 25px rgba(0, 0, 0, 0.7) !important;
-        }
-        .brand-name {
-          color: #38bdf8 !important;
-          text-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
-          font-weight: 800 !important;
-          letter-spacing: 0.05em !important;
-        }
-        .brand-name small { color: #94a3b8 !important; font-weight: 500 !important; }
-        .sidebar {
-          background: #090e1a !important;
-          border-right: 1px solid #1e293b !important;
-        }
-        #nav [role="tab"] {
-          color: #94a3b8 !important;
-          border-radius: 6px !important;
-          font-weight: 600 !important;
-          transition: all 0.2s ease !important;
-          border-left: 3px solid transparent !important;
-        }
-        #nav [role="tab"]:hover {
-          background: #111e38 !important;
-          color: #38bdf8 !important;
-        }
-        #nav [role="tab"][aria-selected="true"] {
-          background: linear-gradient(90deg, rgba(2, 132, 199, 0.3), rgba(2, 132, 199, 0.05)) !important;
-          color: #38bdf8 !important;
-          border-left: 3px solid #38bdf8 !important;
-          box-shadow: 0 0 15px rgba(2, 132, 199, 0.2) !important;
-          font-weight: 700 !important;
-        }
-        .notice {
-          background: #0c182e !important;
-          border: 1px solid #1e3a8a !important;
-          color: #93c5fd !important;
-          border-radius: 8px !important;
-        }
-        .card {
-          background: #0d1527 !important;
-          border: 1px solid #1e293b !important;
-          color: #e2e8f0 !important;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
-          border-radius: 10px !important;
-        }
-        .card h2 {
-          color: #38bdf8 !important;
-          border-bottom: 1px solid #1e293b !important;
-          padding-bottom: 8px !important;
-          letter-spacing: 0.03em !important;
-        }
-        .card.provided { border: 1px solid #1e293b !important; }
-        .card.student {
-          border: 1.5px solid #0284c7 !important;
-          box-shadow: 0 0 25px rgba(2, 132, 199, 0.25), inset 0 0 20px rgba(2, 132, 199, 0.04) !important;
-        }
-        .tag {
-          background: #1e293b !important;
-          color: #94a3b8 !important;
-          border: 1px solid #334155 !important;
-          border-radius: 4px !important;
-        }
-        .tag-student {
-          background: #0369a1 !important;
-          color: #e0f2fe !important;
-          border: 1px solid #38bdf8 !important;
-          box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
-          font-weight: 700 !important;
-        }
-        .btn {
-          background: #0284c7 !important;
-          color: #ffffff !important;
-          border: 1px solid #38bdf8 !important;
-          border-radius: 6px !important;
-          box-shadow: 0 0 10px rgba(2, 132, 199, 0.3) !important;
-          font-weight: 600 !important;
-        }
-        .btn:hover {
-          background: #0369a1 !important;
-          box-shadow: 0 0 15px rgba(56, 189, 248, 0.5) !important;
-        }
-        .identity dt { color: #64748b !important; }
-        .identity dd { color: #f1f5f9 !important; font-weight: 600 !important; }
-        .status-note, .muted, .sidebar-note { color: #94a3b8 !important; }
-        pre.diag-output {
-          background: #060912 !important;
-          border: 1px solid #1e293b !important;
-          color: #38bdf8 !important;
-        }
-
-        /* 레이더 펄스 인디케이터 */
-        .soc-radar-pulse {
-          display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-          background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
-          animation: soc-radar-glow 1.5s infinite; vertical-align: middle; margin-right: 6px;
-        }
-        @keyframes soc-radar-glow {
-          0% { transform: scale(0.95); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5); }
-          50% { transform: scale(1.15); box-shadow: 0 0 12px 4px rgba(16, 185, 129, 0.7); }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5); }
-        }
-      `);
-      container.appendChild(socGlobalStyle);
-
       const currentMode = (me?.mode) || (devices?.mode) || (sessions?.mode) || 'unknown';
       container.appendChild(el('div', 'student-mode-badge', `모드: ${MODE_LABELS[currentMode] || '확인 불가'}`));
 
-      // ======================================================================
-      // ★ [SOC COMMAND CENTER] 최상단 관제 콘솔 HUD 배너 ★
-      // ======================================================================
+      // 핵심 3대 기능 최상단 우선 안내 배너 및 원클릭 탭 전환 내비게이션
       const navBox = el('div', 'student-feature-quick-nav');
-      navBox.style.cssText = `
-        background: linear-gradient(135deg, #091326 0%, #0d1b38 100%);
-        border: 1.5px solid #0284c7;
-        border-radius: 10px;
-        padding: 16px 20px;
-        margin: 12px 0 18px;
-        line-height: 1.75;
-        letter-spacing: 0.025em;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(2, 132, 199, 0.1);
-      `;
-      
+      navBox.style.cssText = 'background: #e7eefc; border: 2px solid #2357c6; border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);';
       const navTitle = el('div', null);
-      navTitle.style.cssText = 'font-weight: 800; color: #38bdf8; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 8px;';
-      navTitle.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="soc-radar-pulse"></span>
-          <span>LIVE SOC OPERATION CONSOLE // bankhar_b HUD</span>
-          <span style="font-size:0.75rem;background:#064e3b;color:#34d399;border:1px solid #059669;padding:2px 8px;border-radius:4px;font-weight:700;">SHIELD SECURE</span>
-        </div>
-        <div style="display:flex;gap:6px;font-size:0.78rem;">
-          <span style="background:#0f274a;color:#7dd3fc;border:1px solid #0284c7;padding:3px 8px;border-radius:4px;">작전: 기록 타임라인형</span>
-          <span style="background:#3b1319;color:#fca5a5;border:1px solid #b91c1c;padding:3px 8px;border-radius:4px;font-weight:700;">SDP: ISOLATED</span>
-        </div>
-      `;
+      navTitle.style.cssText = 'font-weight: 700; color: #2357c6; font-size: 1rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;';
+      navTitle.innerHTML = '<span>★ bankhar_b 핵심 3대 기능 구현 내비게이션</span><span style="font-size:0.8rem;background:#2357c6;color:#fff;padding:2px 8px;border-radius:4px;">작전: 기록 타임라인형</span>';
       navBox.appendChild(navTitle);
 
-      const navSub = el('div', null);
-      navSub.style.cssText = 'font-size: 0.88rem; color: #94a3b8; margin-bottom: 10px;';
-      navSub.innerHTML = '🛡 <strong>Zero Trust &amp; XDR 통합 관제 콘솔</strong> — 3대 핵심 보안 관제 지표가 실시간 연동되어 감시 중입니다.';
-      navBox.appendChild(navSub);
-
       const navUl = el('ul', 'plain-list');
-      navUl.style.cssText = 'font-size: 0.9rem; margin: 0 0 14px; padding: 0; list-style: none; color: #cbd5e1;';
-      navUl.innerHTML = `
-        <li style="padding:4px 0;"><span style="color:#38bdf8;font-weight:700;margin-right:6px;">[01]</span> <strong>[보안 기록]</strong> 시각순 사건 타임라인 및 4종 퀵 필터 모니터링 (renderEvents)</li>
-        <li style="padding:4px 0;"><span style="color:#38bdf8;font-weight:700;margin-right:6px;">[02]</span> <strong>[보호 현황]</strong> 내 PC 하드웨어·네트워크·자원 진단 및 추이 비교 (renderStatus)</li>
-        <li style="padding:4px 0;"><span style="color:#38bdf8;font-weight:700;margin-right:6px;">[03]</span> <strong>[보안 기록]</strong> 4단계 조치 상태 전이 타임라인 게이지 (renderAction)</li>
-      `;
+      navUl.style.cssText = 'font-size: 0.9rem; margin: 0 0 12px; padding: 0; list-style: none;';
+      navUl.appendChild(el('li', null, '① [보안 기록] 탭: 시각순 사건 타임라인 및 4종 퀵 필터 (renderEvents)'));
+      navUl.appendChild(el('li', null, '② [보호 현황] 아래: 내 PC 보안·네트워크·자원 진단 및 추이 (renderStatus)'));
+      navUl.appendChild(el('li', null, '③ [보안 기록] 탭: 4단계 조치 상태 전이 타임라인 게이지 (renderAction)'));
       navBox.appendChild(navUl);
 
       const btnRow = el('div', 'student-nav-btn-row');
@@ -213,13 +67,9 @@ export function createStudentView() {
           tabindex: '0',
           'aria-label': ariaLabel
         });
-        btn.style.cssText = `
-          font-size: 0.86rem; padding: 8px 16px; font-weight: 700; cursor: pointer; border-radius: 6px;
-          border: 1px solid #38bdf8; background: #0c4a6e; color: #ffffff;
-          box-shadow: 0 0 12px rgba(2, 132, 199, 0.4); transition: all 0.2s ease;
-        `;
-        btn.onmouseover = () => { btn.style.background = '#0284c7'; btn.style.boxShadow = '0 0 18px rgba(56, 189, 248, 0.7)'; };
-        btn.onmouseout = () => { btn.style.background = '#0c4a6e'; btn.style.boxShadow = '0 0 12px rgba(2, 132, 199, 0.4)'; };
+        btn.style.cssText = 'font-size: 0.85rem; padding: 8px 14px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #2357c6; background: #ffffff; color: #2357c6; transition: all 0.15s ease;';
+        btn.onmouseover = () => { btn.style.background = '#2357c6'; btn.style.color = '#ffffff'; };
+        btn.onmouseout = () => { btn.style.background = '#ffffff'; btn.style.color = '#2357c6'; };
         btn.onclick = () => {
           if (tabId) {
             const tabBtn = document.getElementById(tabId);
@@ -239,9 +89,9 @@ export function createStudentView() {
         return btn;
       };
 
-      btnRow.appendChild(createNavBtn('① [보안 기록] 사건 타임라인 관제 ➔', 'tab-records', 'student-events', '보안 기록 탭으로 이동하여 사건 타임라인 보기'));
-      btnRow.appendChild(createNavBtn('② [보호 현황] 내 PC 진단 HUD ⬇', 'tab-protection', 'student-status', '보호 현황 탭의 내 PC 상태 진단 영역으로 스크롤'));
-      btnRow.appendChild(createNavBtn('③ [보안 기록] 4단계 조치 게이지 ➔', 'tab-records', 'student-action', '보안 기록 탭으로 이동하여 조치 상태 게이지 보기'));
+      btnRow.appendChild(createNavBtn('① [보안 기록] 사건 타임라인 바로보기 ➔', 'tab-records', 'student-events', '보안 기록 탭으로 이동하여 사건 타임라인 보기'));
+      btnRow.appendChild(createNavBtn('② [보호 현황] 내 PC 진단 바로보기 ⬇', 'tab-protection', 'student-status', '보호 현황 탭의 내 PC 상태 진단 영역으로 스크롤'));
+      btnRow.appendChild(createNavBtn('③ [보안 기록] 4단계 조치 게이지 바로보기 ➔', 'tab-records', 'student-action', '보안 기록 탭으로 이동하여 조치 상태 게이지 보기'));
       navBox.appendChild(btnRow);
       container.appendChild(navBox);
 
@@ -314,64 +164,47 @@ export function createStudentView() {
       const modeLabel = MODE_LABELS[mode || 'unknown'] || '확인 불가';
       const sourceTag = '[실측: 로컬 시스템 측정값]';
 
-      // 핵심 기능 1 최상단 안내 뱃지 (SIEM 관제실 스타일)
+      // 핵심 기능 1 최상단 안내 뱃지
       const eventHeader = el('div', 'student-feature-header');
-      eventHeader.style.cssText = `
-        background: linear-gradient(90deg, #0b172d 0%, #0d2347 100%);
-        border: 1.5px solid #0284c7; border-radius: 8px; padding: 10px 16px; margin: 10px 0 14px;
-        font-weight: 800; color: #38bdf8; font-size: 0.98rem; letter-spacing: 0.04em;
-        box-shadow: 0 0 15px rgba(2, 132, 199, 0.35); display: flex; align-items: center; justify-content: space-between;
-      `;
-      eventHeader.innerHTML = `
-        <span>★ [핵심 기능 ①] SIEM 실시간 보안 사건 모니터링 타임라인 &amp; 4종 퀵 필터</span>
-        <span style="font-size:0.75rem;background:#0c4a6e;color:#7dd3fc;border:1px solid #0284c7;padding:2px 8px;border-radius:4px;">FEED: LIVE</span>
-      `;
+      eventHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
+      eventHeader.textContent = '★ [핵심 기능 ①] 시각순 보안 기록 타임라인 및 4종 퀵 필터';
       container.appendChild(eventHeader);
       
-      // 타임라인 가독성 스타일 블록 (다크 관제실 스타일)
+      // 타임라인 가독성 스타일 블록 (줄간격 line-height: 1.75 및 글간격 letter-spacing: 0.025em 적절히 확장)
       const timelineStyle = el('style', null, `
         .student-timeline-list { display: flex; flex-direction: column; gap: 14px; padding: 0; list-style: none; margin: 16px 0; }
         .student-timeline-item {
           display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-          padding: 14px 18px; border: 1px solid #1e293b !important;
-          border-left: 5px solid #0284c7 !important; border-radius: 8px;
-          background: #0f172a !important; line-height: 1.75; letter-spacing: 0.025em;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+          padding: 14px 18px; border: 1px solid var(--border, #d9dde3);
+          border-left: 5px solid var(--accent, #2357c6); border-radius: 8px;
+          background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .student-timeline-time {
           padding: 5px 12px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
-          background: #0c4a6e !important; color: #38bdf8 !important; border: 1px solid #0284c7 !important;
-          border-radius: 6px; white-space: nowrap;
+          background: #e7eefc; color: #2357c6; border-radius: 6px; white-space: nowrap;
         }
         .student-item-source {
           padding: 4px 10px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
           border-radius: 6px; white-space: nowrap;
         }
-        .student-item-source.tag-demo { background: #451a03 !important; color: #fdba74 !important; border: 1px solid #b45309 !important; }
-        .student-item-source.tag-real { background: rgba(16,185,129,0.15) !important; color: #34d399 !important; border: 1px solid #059669 !important; }
+        .student-item-source.tag-demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
+        .student-item-source.tag-real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
         .student-event-text {
           flex: 1 1 520px; line-height: 1.8; letter-spacing: 0.025em; font-size: 0.95rem;
-          color: #e2e8f0 !important; word-break: keep-all; overflow-wrap: break-word;
+          color: var(--text, #1c2430); word-break: keep-all; overflow-wrap: break-word;
         }
         .student-timeline-quick-tabs { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
         .student-timeline-quick-tabs .btn-tab {
           padding: 8px 18px; font-size: 0.9rem; letter-spacing: 0.03em; font-weight: 600;
-          border-radius: 20px; border: 1px solid #1e293b !important; background: #0d1527 !important; color: #94a3b8 !important; cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .student-timeline-quick-tabs .btn-tab:hover {
-          background: #1e293b !important; color: #38bdf8 !important;
+          border-radius: 20px; border: 1px solid #d9dde3; background: #ffffff; cursor: pointer;
+          transition: all 0.15s ease;
         }
         .student-timeline-quick-tabs .btn-tab.active {
-          background: #0284c7 !important; color: #ffffff !important; border-color: #38bdf8 !important;
-          box-shadow: 0 0 15px rgba(56,189,248,0.5) !important; font-weight: 700 !important;
+          background: #2357c6; color: #ffffff; border-color: #2357c6;
         }
         .student-events-filters { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
-        .student-events-filters select {
-          background: #0f172a !important; color: #e2e8f0 !important; border: 1px solid #334155 !important;
-          border-radius: 6px !important; padding: 4px 8px !important;
-        }
-        .student-filter-label { font-size: 0.9rem; letter-spacing: 0.02em; line-height: 1.6; color: #94a3b8 !important; }
+        .student-filter-label { font-size: 0.9rem; letter-spacing: 0.02em; line-height: 1.6; }
         .student-detail-btn { margin-left: auto; padding: 6px 14px; font-size: 0.85rem; white-space: nowrap; }
       `);
       container.appendChild(timelineStyle);
@@ -595,122 +428,109 @@ export function createStudentView() {
         return text.includes('timeout') || text.includes('초과') || text.includes('timedout');
       };
 
-      // 타임라인 및 PC 자원 가독성 스타일 블록 (사이버 관제 HUD 스타일 전면 강화)
+      // 타임라인 및 PC 자원 가독성 스타일 블록 (막대 바 게이지 및 원형 뱃지 시각화 강화)
       const statusStyle = el('style', null, `
         :focus-visible { outline: 3px solid #f5b400 !important; outline-offset: 2px !important; }
         .pc-top-panel {
-          background: linear-gradient(135deg, #091326 0%, #0d1b38 100%) !important;
-          border: 1.5px solid #0284c7 !important; border-radius: 10px; padding: 18px 22px;
-          margin: 12px 0 18px; line-height: 1.75; letter-spacing: 0.025em;
-          box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(2,132,199,0.1) !important;
+          background: #ffffff; border: 2px solid #2357c6; border-radius: 8px; padding: 16px 20px;
+          margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);
         }
-        .pc-top-header {
-          font-size: 1.15rem; font-weight: 800; color: #38bdf8 !important;
-          text-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
-          margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-          border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 8px;
-        }
-        .pc-btn-group { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
+        .pc-top-header { font-size: 1.1rem; font-weight: 700; color: #2357c6; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .pc-btn-group { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
         .pc-refresh-btn {
-          background: #0284c7 !important; color: #ffffff !important; font-weight: 700; font-size: 0.9rem; padding: 9px 20px;
-          border-radius: 6px; border: 1px solid #38bdf8 !important; cursor: pointer; transition: all 0.2s ease;
-          display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 12px rgba(2,132,199,0.4) !important;
+          background: #2357c6; color: #ffffff; font-weight: 700; font-size: 0.9rem; padding: 8px 18px;
+          border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
         }
-        .pc-refresh-btn:hover { background: #0369a1 !important; box-shadow: 0 0 18px rgba(56,189,248,0.7) !important; }
-        .pc-refresh-btn:disabled { background: #1e293b !important; color: #64748b !important; border-color: #334155 !important; cursor: not-allowed; box-shadow: none !important; }
-        .pc-loading-indicator { font-size: 0.88rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; }
-        .pc-loading-indicator.idle { background: #0c4a6e !important; color: #7dd3fc !important; border: 1px solid #0284c7 !important; }
-        .pc-loading-indicator.busy { background: #451a03 !important; color: #fbbf24 !important; border: 1px solid #d97706 !important; animation: pulse 1s infinite alternate; }
-        .pc-loading-indicator.done { background: #064e3b !important; color: #34d399 !important; border: 1px solid #059669 !important; }
+        .pc-refresh-btn:hover { background: #1a44a1; }
+        .pc-refresh-btn:disabled { background: #8fa5d6; cursor: not-allowed; }
+        .pc-loading-indicator { font-size: 0.88rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; }
+        .pc-loading-indicator.idle { background: #e7eefc; color: #2357c6; border: 1px solid #b8d0fc; }
+        .pc-loading-indicator.busy { background: #fffbe6; color: #d46b08; border: 1px solid #ffe58f; animation: pulse 1s infinite alternate; }
+        .pc-loading-indicator.done { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
         @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
         .pc-failure-guide {
-          background: #2a1215 !important; border: 1px solid #991b1b !important; border-radius: 8px; padding: 12px 16px;
-          margin-top: 12px; font-size: 0.88rem; line-height: 1.6; color: #fca5a5 !important;
+          background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px; padding: 12px 14px;
+          margin-top: 10px; font-size: 0.88rem; line-height: 1.6; color: #434343;
         }
         .pc-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
         .pc-resource-card {
-          padding: 16px; border: 1px solid #1e293b !important; border-radius: 8px;
-          background: #0f172a !important; line-height: 1.75; letter-spacing: 0.025em;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important; color: #e2e8f0 !important;
+          padding: 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+          background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-        .pc-resource-card h4 {
-          margin: 0 0 10px; font-size: 1rem; color: #38bdf8 !important; display: flex;
-          align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b !important; padding-bottom: 6px;
-        }
-        .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 700; margin-left: 6px; white-space: nowrap; }
-        .pc-badge-tag.real { background: rgba(16,185,129,0.15) !important; color: #34d399 !important; border: 1px solid #059669 !important; }
-        .pc-badge-tag.unv { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; border: 1px solid #dc2626 !important; }
-        .pc-badge-tag.sdp-off { background: #4c0519 !important; color: #fb7185 !important; border: 1px solid #e11d48 !important; font-weight: 800; }
-        .pc-unv-reason { font-size: 0.85rem; color: #fca5a5 !important; background: #2a1215 !important; border: 1px solid #7f1d1d !important; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
-        .pc-safe-notice { font-size: 0.9rem; color: #bae6fd !important; background: #0c1c38 !important; padding: 12px 16px; border-radius: 6px; margin: 10px 0; line-height: 1.6; border-left: 4px solid #38bdf8 !important; }
+        .pc-resource-card h4 { margin: 0 0 10px; font-size: 1rem; color: #2357c6; display: flex; align-items: center; justify-content: space-between; }
+        .pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
+        .pc-badge-tag.real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
+        .pc-badge-tag.unv { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .pc-badge-tag.sdp-off { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; font-weight: 700; }
+        .pc-unv-reason { font-size: 0.85rem; color: #b91c1c; background: #fff5f5; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
+        .pc-safe-notice { font-size: 0.9rem; color: #2357c6; background: #e7eefc; padding: 10px 14px; border-radius: 6px; margin: 10px 0; line-height: 1.6; border-left: 4px solid #2357c6; }
         .pc-timeline-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; padding: 0; list-style: none; }
         .pc-timeline-item {
-          padding: 14px 18px; border: 1px solid #1e293b !important; border-left: 5px solid #0284c7 !important;
-          border-radius: 8px; background: #0f172a !important; line-height: 1.75; letter-spacing: 0.025em;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important; color: #e2e8f0 !important;
+          padding: 14px 18px; border: 1px solid var(--border, #d9dde3); border-left: 5px solid #2357c6;
+          border-radius: 8px; background: #ffffff; line-height: 1.75; letter-spacing: 0.025em;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .pc-timeline-header { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
-        .pc-timeline-time { padding: 4px 10px; font-size: 0.85rem; font-weight: 700; background: #0c4a6e !important; color: #38bdf8 !important; border: 1px solid #0284c7 !important; border-radius: 6px; }
-        .pc-trend-badge { padding: 3px 8px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; }
-        .pc-trend-up { background: #451a03 !important; color: #fb923c !important; border: 1px solid #ea580c !important; }
-        .pc-trend-down { background: #064e3b !important; color: #34d399 !important; border: 1px solid #059669 !important; }
-        .pc-trend-same { background: #1e293b !important; color: #94a3b8 !important; border: 1px solid #334155 !important; }
+        .pc-timeline-time { padding: 4px 10px; font-size: 0.85rem; font-weight: 700; background: #e7eefc; color: #2357c6; border-radius: 6px; }
+        .pc-trend-badge { padding: 3px 8px; font-size: 0.8rem; font-weight: 600; border-radius: 4px; }
+        .pc-trend-up { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
+        .pc-trend-down { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+        .pc-trend-same { background: #f5f5f5; color: #595959; border: 1px solid #d9d9d9; }
         .pc-timeline-tabs { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
         .pc-timeline-tabs button {
           padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 18px;
-          border: 1px solid #1e293b !important; background: #0d1527 !important; color: #94a3b8 !important; cursor: pointer; transition: all 0.15s ease;
+          border: 1px solid #d9dde3; background: #ffffff; cursor: pointer; transition: all 0.15s ease;
         }
-        .pc-timeline-tabs button:hover { background: #1e293b !important; color: #38bdf8 !important; }
-        .pc-timeline-tabs button.active { background: #0284c7 !important; color: #ffffff !important; border-color: #38bdf8 !important; box-shadow: 0 0 12px rgba(56,189,248,0.4) !important; }
+        .pc-timeline-tabs button.active { background: #2357c6; color: #ffffff; border-color: #2357c6; }
 
         /* 막대 형태 (Progress Bar / Gauge Bar) */
         .pc-progress-wrap { margin: 8px 0 10px; }
-        .pc-progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #cbd5e1 !important; }
-        .pc-progress-bar-bg { width: 100%; height: 12px; background: #1e293b !important; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid #334155 !important; }
+        .pc-progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #334155; }
+        .pc-progress-bar-bg { width: 100%; height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; position: relative; }
         .pc-progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
-        .pc-progress-bar-fill.fill-green { background: linear-gradient(90deg, #059669, #34d399) !important; box-shadow: 0 0 8px rgba(52,211,153,0.5) !important; }
-        .pc-progress-bar-fill.fill-blue { background: linear-gradient(90deg, #0284c7, #38bdf8) !important; box-shadow: 0 0 8px rgba(56,189,248,0.5) !important; }
-        .pc-progress-bar-fill.fill-purple { background: linear-gradient(90deg, #7c3aed, #a78bfa) !important; box-shadow: 0 0 8px rgba(167,139,250,0.5) !important; }
+        .pc-progress-bar-fill.fill-green { background: linear-gradient(90deg, #10b981, #059669); }
+        .pc-progress-bar-fill.fill-blue { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .pc-progress-bar-fill.fill-purple { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
 
         /* 원 형태 (Circular Badge & Dot Indicator) */
         .pc-circle-badge {
           display: inline-flex; align-items: center; justify-content: center;
           width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; margin-right: 6px; flex-shrink: 0;
         }
-        .pc-circle-badge.circle-green { background: #064e3b !important; color: #34d399 !important; border: 1px solid #059669 !important; }
-        .pc-circle-badge.circle-blue { background: #0c4a6e !important; color: #38bdf8 !important; border: 1px solid #0284c7 !important; }
-        .pc-circle-badge.circle-orange { background: #451a03 !important; color: #fb923c !important; border: 1px solid #ea580c !important; }
-        .pc-circle-badge.circle-red { background: #4c0519 !important; color: #fb7185 !important; border: 1px solid #e11d48 !important; }
+        .pc-circle-badge.circle-green { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .pc-circle-badge.circle-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .pc-circle-badge.circle-orange { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+        .pc-circle-badge.circle-red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
         .pc-status-dot {
           display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle;
         }
-        .pc-status-dot.dot-online { background: #10b981 !important; box-shadow: 0 0 0 2px rgba(16,185,129,0.3) !important; animation: pulse-dot 1.5s infinite; }
-        .pc-status-dot.dot-alert { background: #ef4444 !important; box-shadow: 0 0 0 2px rgba(239,68,68,0.3) !important; }
-        .pc-status-dot.dot-unv { background: #64748b !important; }
+        .pc-status-dot.dot-online { background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.25); animation: pulse-dot 1.5s infinite; }
+        .pc-status-dot.dot-alert { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+        .pc-status-dot.dot-unv { background: #94a3b8; }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.15); } }
 
-        /* 하위 보조 진단 2x2 반응형 그리드 (사이버 관제 모듈 룩) */
+        /* 하위 보조 진단 2x2 반응형 그리드 */
         .pc-sub-header {
           display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 8px; border-bottom: 1.5px solid #1e293b !important; padding-bottom: 8px;
+          margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;
         }
         .pc-sub-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: 14px; margin-top: 12px;
         }
         .pc-sub-card {
-          padding: 16px; border: 1px solid #1e293b !important; border-radius: 8px;
-          background: #0f172a !important; box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
-          display: flex; flex-direction: column; color: #e2e8f0 !important;
+          padding: 14px 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+          background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+          display: flex; flex-direction: column;
         }
         .pc-sub-card h4 {
-          margin: 0 0 8px; font-size: 0.95rem; color: #38bdf8 !important; display: flex;
-          align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b !important; padding-bottom: 6px;
+          margin: 0 0 8px; font-size: 0.95rem; color: #1e3a8a; display: flex;
+          align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;
         }
         .pc-sub-card .plain-list { margin: 0; padding: 0; list-style: none; font-size: 0.86rem; }
-        .pc-sub-card .plain-list li { padding: 5px 0; border-bottom: 1px dashed #1e293b !important; line-height: 1.5; color: #cbd5e1 !important; }
-        .pc-sub-card .plain-list li:last-child { border-bottom: none; }
+        .pc-sub-card .plain-list li { padding: 4px 0; border-bottom: 1px dashed #e2e8f0; line-height: 1.5; }
         .pc-sub-card .plain-list li:last-child { border-bottom: none; }
       `);
       container.appendChild(statusStyle);
@@ -1546,42 +1366,28 @@ export function createStudentView() {
         'data-student-action-status': curStatus
       });
 
-      // 4단계 게이지 전용 가독성 스타일 (사이버 관제 파이프라인 룩)
+      // 4단계 게이지 전용 가독성 스타일
       const actionStyle = el('style', null, `
         .student-action-timeline-gauge { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
         .student-action-step {
-          flex: 1 1 180px; padding: 12px 14px; border-radius: 8px; border: 1.5px solid #1e293b !important;
-          background: #0f172a !important; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
-          transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; color: #94a3b8 !important;
+          flex: 1 1 180px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d9dde3;
+          background: #f8fafc; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
+          transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-        .student-action-step.step-completed {
-          border-color: #059669 !important; background: rgba(5,150,105,0.18) !important; color: #34d399 !important;
-          box-shadow: 0 0 12px rgba(5,150,105,0.3) !important; font-weight: 700 !important;
-        }
-        .student-action-step.step-active {
-          border-color: #0284c7 !important; background: rgba(2,132,199,0.22) !important; color: #38bdf8 !important;
-          box-shadow: 0 0 15px rgba(2,132,199,0.5) !important; font-weight: 800 !important;
-        }
-        .student-action-step.step-pending { border-color: #1e293b !important; background: #0b1120 !important; color: #64748b !important; }
+        .student-action-step.step-completed { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+        .student-action-step.step-active { border-color: #1976d2; background: #e3f2fd; color: #0d47a1; box-shadow: 0 0 0 3px rgba(25,118,210,0.18); }
+        .student-action-step.step-pending { border-color: #e2e8f0; background: #ffffff; color: #94a3b8; }
         .student-action-badge-row { margin: 10px 0 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .student-action-badge-row .student-badge { padding: 9px 18px; border-radius: 6px; font-weight: 800; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
-        .student-action-badge-row .badge-warning { background: #431407 !important; color: #fb923c !important; border: 1px solid #ea580c !important; box-shadow: 0 0 14px rgba(234,88,12,0.4) !important; }
-        .student-action-badge-row .badge-success { background: #064e3b !important; color: #34d399 !important; border: 1px solid #059669 !important; box-shadow: 0 0 14px rgba(5,150,105,0.4) !important; }
+        .student-action-badge-row .student-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+        .student-action-badge-row .badge-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+        .student-action-badge-row .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
       `);
       container.appendChild(actionStyle);
 
-      // 핵심 기능 3 최상단 안내 뱃지 (사이버 관제 파이프라인 스타일)
+      // 핵심 기능 3 최상단 안내 뱃지
       const actionHeader = el('div', 'student-feature-header');
-      actionHeader.style.cssText = `
-        background: linear-gradient(90deg, #0b172d 0%, #0d2347 100%);
-        border: 1.5px solid #0284c7; border-radius: 8px; padding: 10px 16px; margin: 10px 0 14px;
-        font-weight: 800; color: #38bdf8; font-size: 0.98rem; letter-spacing: 0.04em;
-        box-shadow: 0 0 15px rgba(2, 132, 199, 0.35); display: flex; align-items: center; justify-content: space-between;
-      `;
-      actionHeader.innerHTML = `
-        <span>★ [핵심 기능 ③] INCIDENT RESPONSE ACTION PIPELINE &amp; 원천 효과 분리</span>
-        <span style="font-size:0.75rem;background:#0c4a6e;color:#7dd3fc;border:1px solid #0284c7;padding:2px 8px;border-radius:4px;">STATUS: ARMED</span>
-      `;
+      actionHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
+      actionHeader.textContent = '★ [핵심 기능 ③] 4단계 조치 상태 전이 타임라인 게이지 및 원천 효과 분리';
       container.appendChild(actionHeader);
 
       if (event && event.id) container.setAttribute('data-student-action-event', event.id);
