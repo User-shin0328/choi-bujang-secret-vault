@@ -84,6 +84,14 @@ function createOfficialTimelineComponent(titleSuffix = '') {
   const listUl = el('ul', 'pc-official-timeline-list');
   box.appendChild(listUl);
 
+  if (typeof window !== 'undefined') {
+    if (!window._timelineRenderers) window._timelineRenderers = [];
+    window._timelineRenderers.push(() => renderList());
+    window._refreshAllTimelines = () => {
+      window._timelineRenderers.forEach(fn => { try { fn(); } catch(e){} });
+    };
+  }
+
   function renderList() {
     listUl.innerHTML = '';
     const filtered = sharedTimelineData.filter(item => {
@@ -615,14 +623,15 @@ export function createStudentView() {
           loadingIndicator.textContent = '조회 완료 (로컬 실측 시각 갱신)';
           if (typeof renderTimelineList === 'function') renderTimelineList();
           const nowStr = new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-          if (typeof addOfficialTimelineRecord === 'function') {
-            addOfficialTimelineRecord({
-              time: nowStr,
-              type: 'ok',
-              icon: '●',
-              text: `다시 조회 · CPU ${hwConcurrency}코어 / JS 힙 실측값 갱신 반영 완료 (정상)`,
-              badge: '정상'
-            });
+          sharedTimelineData.unshift({
+            time: nowStr,
+            type: 'ok',
+            icon: '●',
+            text: `다시 조회 · CPU ${hwConcurrency}코어 / JS 힙 ${memoryMB}MB 실측 갱신 반영 완료 (정상)`,
+            badge: '정상'
+          });
+          if (typeof window !== 'undefined' && typeof window._refreshAllTimelines === 'function') {
+            window._refreshAllTimelines();
           }
         }, 350);
       };
@@ -651,92 +660,7 @@ export function createStudentView() {
 
       container.appendChild(topPanel);
 
-      // ======================================================================
-      // [포털 공식 예시 1:1 일치] 기록 타임라인형 UI (알약 칩 + 시각순 한 줄 스택 피드)
-      // ======================================================================
-      const officialTimelineBox = el('section', 'pc-timeline-box', null, {
-        'aria-label': '기록 타임라인형 내 PC 상태 조회 이력'
-      });
-      const timelineHeader = el('div', null);
-      timelineHeader.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;';
-      const timelineTitle = el('h3', null, '⏱ 조회 기록 타임라인 (포털 공통 [기록 타임라인형] 전용)');
-      timelineTitle.style.cssText = 'margin:0; font-size:1.05rem; color:#1e3a8a; display:flex; align-items:center; gap:6px;';
-      const timelineDesc = el('span', null, '조회할 때마다 시각과 결과를 한 줄씩 위로 쌓고 필터링합니다.');
-      timelineDesc.style.cssText = 'font-size:0.82rem; color:#64748b; font-weight:normal;';
-      timelineHeader.appendChild(timelineTitle);
-      timelineHeader.appendChild(timelineDesc);
-      officialTimelineBox.appendChild(timelineHeader);
-
-      let currentTimelineFilter = 'all';
-      const officialHistoryData = [
-        { time: '14:05', type: 'warn', icon: '▲', text: '원천 SDP 제어 서버 미연결 (네트워크 분리 주의)', badge: '주의' },
-        { time: '14:02', type: 'ok', icon: '●', text: `다시 조회 · CPU ${hwConcurrency}코어 / JS 힙 ${memoryMB}MB 실측 (정상)`, badge: '정상' },
-        { time: '13:40', type: 'unv', icon: '?', text: '이벤트 기록을 읽지 못함 (브라우저 샌드박스로 OS 로그 차단)', badge: '확인 불가' },
-        { time: '13:35', type: 'unv', icon: '?', text: '디스크 남은 공간 / Windows 방화벽 (권한 정책상 확인 불가)', badge: '확인 불가' }
-      ];
-
-      const chipTabs = el('div', 'pc-timeline-chip-tabs', null, { role: 'tablist' });
-      const chipAll = el('button', 'pc-timeline-chip chip-all active', '전체 (4)', { type: 'button', 'data-filter': 'all' });
-      const chipWarn = el('button', 'pc-timeline-chip chip-warn', '주의 (1)', { type: 'button', 'data-filter': 'warn' });
-      const chipUnv = el('button', 'pc-timeline-chip chip-unv', '확인 불가 (2)', { type: 'button', 'data-filter': 'unv' });
-      chipTabs.appendChild(chipAll);
-      chipTabs.appendChild(chipWarn);
-      chipTabs.appendChild(chipUnv);
-      officialTimelineBox.appendChild(chipTabs);
-
-      const officialListUl = el('ul', 'pc-official-timeline-list');
-      officialTimelineBox.appendChild(officialListUl);
-
-      function renderOfficialTimeline() {
-        officialListUl.innerHTML = '';
-        const filtered = officialHistoryData.filter(item => {
-          if (currentTimelineFilter === 'all') return true;
-          return item.type === currentTimelineFilter;
-        });
-
-        const totalCnt = officialHistoryData.length;
-        const warnCnt = officialHistoryData.filter(x => x.type === 'warn').length;
-        const unvCnt = officialHistoryData.filter(x => x.type === 'unv').length;
-        chipAll.textContent = `전체 (${totalCnt})`;
-        chipWarn.textContent = `주의 (${warnCnt})`;
-        chipUnv.textContent = `확인 불가 (${unvCnt})`;
-
-        [chipAll, chipWarn, chipUnv].forEach(btn => {
-          btn.classList.toggle('active', btn.getAttribute('data-filter') === currentTimelineFilter);
-        });
-
-        filtered.forEach(item => {
-          const row = el('li', `pc-official-timeline-row ${item.type === 'warn' ? 'row-warn' : item.type === 'unv' ? 'row-unv' : ''}`);
-          const timeSpan = el('span', 'pc-row-time', item.time);
-          const iconSpan = el('span', `pc-row-icon icon-${item.type}`, item.icon);
-          const textSpan = el('span', 'pc-row-text', item.text);
-          const badgeSpan = el('span', 'pc-row-badge', item.badge);
-          if (item.type === 'ok') {
-            badgeSpan.style.cssText = 'background:#f0fdf4; color:#15803d; border:1px solid #86efac;';
-          } else if (item.type === 'warn') {
-            badgeSpan.style.cssText = 'background:#fff7ed; color:#c2410c; border:1px solid #fdba74;';
-          } else {
-            badgeSpan.style.cssText = 'background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;';
-          }
-          row.appendChild(timeSpan);
-          row.appendChild(iconSpan);
-          row.appendChild(textSpan);
-          row.appendChild(badgeSpan);
-          officialListUl.appendChild(row);
-        });
-      }
-
-      function addOfficialTimelineRecord(item) {
-        officialHistoryData.unshift(item);
-        renderOfficialTimeline();
-      }
-
-      chipAll.onclick = () => { currentTimelineFilter = 'all'; renderOfficialTimeline(); };
-      chipWarn.onclick = () => { currentTimelineFilter = 'warn'; renderOfficialTimeline(); };
-      chipUnv.onclick = () => { currentTimelineFilter = 'unv'; renderOfficialTimeline(); };
-
-      renderOfficialTimeline();
-      container.appendChild(officialTimelineBox);
+      // (공통 createOfficialTimelineComponent로 일원화되어 중복 제거됨)
 
       // ======================================================================
       // 1. PC 네트워크·방화벽·Windows 기록 및 SDP 분리 대시보드
