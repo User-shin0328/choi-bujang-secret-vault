@@ -207,3 +207,158 @@ main:focus { outline: none; }
 .state-ok { background: var(--allow-soft); color: var(--allow); }
 .ai-result[data-state="connected"] { border-left: 3px solid var(--allow); padding-left: 12px; }
 .ai-result[data-state="unknown"] { border-left: 3px solid var(--unknown); padding-left: 12px; }
+
+/* ====================================================================== */
+/* ★ [bankhar_b] 학생 구현 시각화 스타일 (CSP style-src 'self' 준수) ★ */
+/* ====================================================================== */
+:focus-visible { outline: 3px solid #f5b400 !important; outline-offset: 2px !important; }
+
+/* 1. 포털 공식 예시 캡처 1:1 일치 [기록 타임라인형] UI */
+.pc-timeline-box {
+  background: #ffffff; border: 2px solid #2357c6; border-radius: 8px;
+  padding: 16px; margin: 12px 0 16px; box-shadow: 0 2px 6px rgba(35,87,198,0.08);
+}
+.pc-timeline-chip-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.pc-timeline-chip {
+  padding: 6px 16px; font-size: 0.88rem; font-weight: 700; border-radius: 999px;
+  border: 1px solid #d9dde3; background: #ffffff; color: #475569; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pc-timeline-chip:hover { border-color: #2357c6; color: #2357c6; }
+.pc-timeline-chip.active.chip-all { background: #10b981; color: #ffffff; border-color: #10b981; }
+.pc-timeline-chip.active.chip-warn { background: #f59e0b; color: #ffffff; border-color: #f59e0b; }
+.pc-timeline-chip.active.chip-unv { background: #64748b; color: #ffffff; border-color: #64748b; }
+
+.pc-official-timeline-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pc-official-timeline-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 6px;
+  background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.92rem; line-height: 1.5;
+}
+.pc-official-timeline-row.row-warn { background: #fffbeb; border-color: #fde68a; }
+.pc-official-timeline-row.row-unv { background: #f8fafc; border-color: #e2e8f0; }
+.pc-row-time { font-weight: 700; color: #64748b; font-size: 0.86rem; min-width: 50px; }
+.pc-row-icon { font-size: 0.95rem; font-weight: 800; min-width: 18px; text-align: center; }
+.pc-row-icon.icon-ok { color: #10b981; }
+.pc-row-icon.icon-warn { color: #f59e0b; }
+.pc-row-icon.icon-unv { color: #64748b; }
+.pc-row-text { flex: 1 1 auto; color: #1e293b; font-weight: 500; }
+.pc-row-badge { margin-left: auto; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+
+/* 2. 컨트롤 패널 및 다시 조회 버튼 */
+.pc-top-panel {
+  background: #ffffff; border: 2px solid #2357c6; border-radius: 8px; padding: 16px 20px;
+  margin: 12px 0 16px; line-height: 1.75; letter-spacing: 0.025em; box-shadow: 0 2px 6px rgba(35,87,198,0.08);
+}
+.pc-top-header { font-size: 1.1rem; font-weight: 700; color: #2357c6; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.pc-btn-group { display: flex; align-items: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+.pc-refresh-btn {
+  background: #2357c6; color: #ffffff; font-weight: 700; font-size: 0.9rem; padding: 8px 18px;
+  border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
+}
+.pc-refresh-btn:hover { background: #1a44a1; }
+.pc-refresh-btn:disabled { background: #8fa5d6; cursor: not-allowed; }
+.pc-loading-indicator { font-size: 0.88rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; }
+.pc-loading-indicator.idle { background: #e7eefc; color: #2357c6; border: 1px solid #b8d0fc; }
+.pc-loading-indicator.busy { background: #fffbe6; color: #d46b08; border: 1px solid #ffe58f; }
+.pc-loading-indicator.done { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+.pc-failure-guide {
+  background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px; padding: 12px 14px;
+  margin-top: 10px; font-size: 0.88rem; line-height: 1.6; color: #434343;
+}
+
+/* 3. 내 PC 자원 진단 카드 및 막대 바 게이지 */
+.pc-resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
+.pc-resource-card {
+  padding: 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+  background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.pc-resource-card h4 { margin: 0 0 10px; font-size: 1rem; color: #2357c6; display: flex; align-items: center; justify-content: space-between; }
+.pc-badge-tag { display: inline-block; padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
+.pc-badge-tag.real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
+.pc-badge-tag.unv { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.pc-badge-tag.sdp-off { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; font-weight: 700; }
+.pc-unv-reason { font-size: 0.85rem; color: #b91c1c; background: #fff5f5; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px; line-height: 1.6; word-break: keep-all; }
+.pc-safe-notice { font-size: 0.9rem; color: #2357c6; background: #e7eefc; padding: 10px 14px; border-radius: 6px; margin: 10px 0; line-height: 1.6; border-left: 4px solid #2357c6; }
+
+/* 게이지 바 */
+.pc-progress-wrap { margin: 8px 0 10px; }
+.pc-progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #334155; }
+.pc-progress-bar-bg { width: 100%; height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; position: relative; }
+.pc-progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+.pc-progress-bar-fill.fill-green { background: linear-gradient(90deg, #10b981, #059669); }
+.pc-progress-bar-fill.fill-blue { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+.pc-progress-bar-fill.fill-purple { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+
+/* 원형 뱃지 및 점 */
+.pc-circle-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; margin-right: 6px; flex-shrink: 0;
+}
+.pc-circle-badge.circle-green { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.pc-circle-badge.circle-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.pc-circle-badge.circle-orange { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+.pc-circle-badge.circle-red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+.pc-status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.pc-status-dot.dot-online { background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.25); }
+.pc-status-dot.dot-alert { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+.pc-status-dot.dot-unv { background: #94a3b8; }
+
+/* 4. 하위 보조 진단 2x2 반응형 그리드 */
+.pc-sub-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;
+}
+.pc-sub-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px; margin-top: 12px;
+}
+.pc-sub-card {
+  padding: 14px 16px; border: 1px solid var(--border, #d9dde3); border-radius: 8px;
+  background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  display: flex; flex-direction: column;
+}
+.pc-sub-card h4 {
+  margin: 0 0 8px; font-size: 0.95rem; color: #1e3a8a; display: flex;
+  align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;
+}
+.pc-sub-card .plain-list { margin: 0; padding: 0; list-style: none; font-size: 0.86rem; }
+.pc-sub-card .plain-list li { padding: 4px 0; border-bottom: 1px dashed #e2e8f0; line-height: 1.5; }
+.pc-sub-card .plain-list li:last-child { border-bottom: none; }
+
+/* 5. 보안 사건 타임라인 및 4종 퀵 필터 */
+.student-timeline-list { display: flex; flex-direction: column; gap: 14px; padding: 0; list-style: none; margin: 16px 0; }
+.student-timeline-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  padding: 14px 18px; border: 1px solid var(--border, #d9dde3);
+  border-left: 5px solid var(--accent, #2357c6); border-radius: 8px;
+  background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.student-timeline-time {
+  padding: 5px 12px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
+  background: #e7eefc; color: #2357c6; border-radius: 6px; white-space: nowrap;
+}
+.student-timeline-quick-tabs { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
+.student-timeline-quick-tabs .btn-tab {
+  padding: 8px 18px; font-size: 0.9rem; letter-spacing: 0.03em; font-weight: 600;
+  border-radius: 20px; border: 1px solid #d9dde3; background: #ffffff; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.student-timeline-quick-tabs .btn-tab.active { background: #2357c6; color: #ffffff; border-color: #2357c6; }
+
+/* 6. 4단계 조치 게이지 */
+.student-action-timeline-gauge { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
+.student-action-step {
+  flex: 1 1 180px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d9dde3;
+  background: #f8fafc; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.student-action-step.step-completed { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+.student-action-step.step-active { border-color: #1976d2; background: #e3f2fd; color: #0d47a1; box-shadow: 0 0 0 3px rgba(25,118,210,0.18); }
+.student-action-step.step-pending { border-color: #e2e8f0; background: #ffffff; color: #94a3b8; }
+.student-action-badge-row { margin: 10px 0 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.student-action-badge-row .student-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+.student-action-badge-row .badge-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+.student-action-badge-row .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
