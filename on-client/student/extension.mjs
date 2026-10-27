@@ -171,43 +171,7 @@ export function createStudentView() {
       container.appendChild(eventHeader);
       
       // 타임라인 가독성 스타일 블록 (줄간격 line-height: 1.75 및 글간격 letter-spacing: 0.025em 적절히 확장)
-      const timelineStyle = el('style', null, `
-        .student-timeline-list { display: flex; flex-direction: column; gap: 14px; padding: 0; list-style: none; margin: 16px 0; }
-        .student-timeline-item {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-          padding: 14px 18px; border: 1px solid var(--border, #d9dde3);
-          border-left: 5px solid var(--accent, #2357c6); border-radius: 8px;
-          background: var(--surface, #ffffff); line-height: 1.75; letter-spacing: 0.025em;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .student-timeline-time {
-          padding: 5px 12px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
-          background: #e7eefc; color: #2357c6; border-radius: 6px; white-space: nowrap;
-        }
-        .student-item-source {
-          padding: 4px 10px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
-          border-radius: 6px; white-space: nowrap;
-        }
-        .student-item-source.tag-demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
-        .student-item-source.tag-real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
-        .student-event-text {
-          flex: 1 1 520px; line-height: 1.8; letter-spacing: 0.025em; font-size: 0.95rem;
-          color: var(--text, #1c2430); word-break: keep-all; overflow-wrap: break-word;
-        }
-        .student-timeline-quick-tabs { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
-        .student-timeline-quick-tabs .btn-tab {
-          padding: 8px 18px; font-size: 0.9rem; letter-spacing: 0.03em; font-weight: 600;
-          border-radius: 20px; border: 1px solid #d9dde3; background: #ffffff; cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .student-timeline-quick-tabs .btn-tab.active {
-          background: #2357c6; color: #ffffff; border-color: #2357c6;
-        }
-        .student-events-filters { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
-        .student-filter-label { font-size: 0.9rem; letter-spacing: 0.02em; line-height: 1.6; }
-        .student-detail-btn { margin-left: auto; padding: 6px 14px; font-size: 0.85rem; white-space: nowrap; }
-      `);
-      container.appendChild(timelineStyle);
+      // timelineStyle moved to public/style.css to comply with CSP
 
       const badgeWrap = el('div', 'student-mode-badge-wrap');
       badgeWrap.appendChild(el('span', 'student-mode-badge', `모드: ${modeLabel}`));
@@ -1456,150 +1420,202 @@ export function createStudentView() {
       return container;
     },
 
-    renderAction({ status, event, actionId, target, receipt, observation, message, confirmationExpiresAt, error } = {}) {
-      const curStatus = status || 'idle';
+    renderAction(initialProps = {}) {
+      let state = {
+        status: initialProps.status || 'idle',
+        event: initialProps.event || { id: 'evt-2026-demo-01', text: '의심스러운 비인가 내부망 접근 시도 감지' },
+        actionId: initialProps.actionId || 'action-isolate-host',
+        target: initialProps.target || { id: 'host-win11-sec', generation: 1 },
+        receipt: initialProps.receipt || { requestId: 'req-ack-8921', receiptId: 'rcpt-99201', version: 1 },
+        observation: initialProps.observation || { effectApplied: false, observedAt: null },
+        message: initialProps.message,
+        confirmationExpiresAt: initialProps.confirmationExpiresAt || '2026-10-27 18:00:00',
+        error: initialProps.error
+      };
+
       const container = el('div', 'student-action-view', null, {
         'data-student-section': 'action',
-        'data-student-action-status': curStatus
+        'data-student-action-status': state.status
       });
-
-      // 4단계 게이지 전용 가독성 스타일
-      const actionStyle = el('style', null, `
-        .student-action-timeline-gauge { display: flex; gap: 10px; margin: 14px 0 16px; flex-wrap: wrap; }
-        .student-action-step {
-          flex: 1 1 180px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d9dde3;
-          background: #f8fafc; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
-          transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .student-action-step.step-completed { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
-        .student-action-step.step-active { border-color: #1976d2; background: #e3f2fd; color: #0d47a1; box-shadow: 0 0 0 3px rgba(25,118,210,0.18); }
-        .student-action-step.step-pending { border-color: #e2e8f0; background: #ffffff; color: #94a3b8; }
-        .student-action-badge-row { margin: 10px 0 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .student-action-badge-row .student-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
-        .student-action-badge-row .badge-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
-        .student-action-badge-row .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
-      `);
-      container.appendChild(actionStyle);
 
       // 핵심 기능 3 최상단 안내 뱃지
       const actionHeader = el('div', 'student-feature-header');
-      actionHeader.style.cssText = 'background: #e7eefc; border: 1px solid #2357c6; border-radius: 6px; padding: 8px 14px; margin: 10px 0; font-weight: 700; color: #2357c6; font-size: 0.95rem;';
-      actionHeader.textContent = '★ [핵심 기능 ③] 4단계 조치 상태 전이 타임라인 게이지 및 원천 효과 분리';
+      actionHeader.style.cssText = 'background: #e7eefc; border: 2px solid #2357c6; border-radius: 8px; padding: 12px 16px; margin: 10px 0 14px;';
+      const hTitle = el('div', null, '★ [핵심 기능 ③] 4단계 조치 상태 전이 타임라인 게이지 및 원천 효과 분리');
+      hTitle.style.cssText = 'font-weight: 700; color: #2357c6; font-size: 1rem; margin-bottom: 4px;';
+      const hDesc = el('div', null, '조치 제안부터 원천 효과 확인까지 4단계 상태 전이를 시각화하고, 원천 차단기 미연동 상태를 투명하게 구분합니다.');
+      hDesc.style.cssText = 'font-size: 0.84rem; color: #475569;';
+      actionHeader.appendChild(hTitle);
+      actionHeader.appendChild(hDesc);
       container.appendChild(actionHeader);
 
-      if (event && event.id) container.setAttribute('data-student-action-event', event.id);
-      if (receipt && receipt.requestId) container.setAttribute('data-student-action-request', receipt.requestId);
+      // [조치 직접 시험 컨트롤 바]
+      const simBox = el('div', 'student-action-sim-box');
+      simBox.style.cssText = 'background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;';
+      const simTitle = el('div', null, '🛠 4단계 조치 전이 직접 시험 (원클릭 시연):');
+      simTitle.style.cssText = 'font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 8px;';
+      simBox.appendChild(simTitle);
 
-      container.appendChild(el('h4', 'student-action-title', '보안 조치 요청 상태'));
+      const simBtns = el('div', null);
+      simBtns.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap;';
 
-      // 4단계 조치 상태 전이 타임라인 게이지 UI
-      const steps = [
-        { id: 'proposal', label: '1. 조치 제안' },
-        { id: 'approval', label: '2. 사용자 확인' },
-        { id: 'pending', label: '3. 서버 접수(ACK)' },
-        { id: 'effect', label: '4. 원천 효과 확인' }
-      ];
+      const createSimBtn = (label, statusVal, effectVal, obsAt) => {
+        const btn = el('button', 'btn', label, { type: 'button' });
+        btn.style.cssText = 'font-size: 0.82rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #2357c6; background: #ffffff; color: #2357c6; font-weight: 600; transition: all 0.15s ease;';
+        btn.onmouseover = () => { btn.style.background = '#2357c6'; btn.style.color = '#ffffff'; };
+        btn.onmouseout = () => { btn.style.background = '#ffffff'; btn.style.color = '#2357c6'; };
+        btn.onclick = () => {
+          state.status = statusVal;
+          state.observation = { effectApplied: effectVal, observedAt: obsAt };
+          container.setAttribute('data-student-action-status', statusVal);
+          updateActionView();
+        };
+        return btn;
+      };
 
-      // 단계별 진행도 판정 (succeeded는 observation.effectApplied === true일 때만 4단계 도달)
-      let currentStepIndex = 0;
-      if (curStatus === 'prepared') currentStepIndex = 1;
-      else if (curStatus === 'executing' || curStatus === 'pending') currentStepIndex = 2;
-      else if (curStatus === 'succeeded' && observation?.effectApplied === true) currentStepIndex = 3;
+      simBtns.appendChild(createSimBtn('① 조치 제안 (prepared)', 'prepared', false, null));
+      simBtns.appendChild(createSimBtn('② 사람 확인·전달 중 (executing)', 'executing', false, null));
+      simBtns.appendChild(createSimBtn('③ 서버 접수 (pending ACK)', 'pending', false, null));
+      simBtns.appendChild(createSimBtn('④ 원천 효과 확인 (succeeded)', 'succeeded', true, '2026-10-27 16:30:15'));
+      simBtns.appendChild(createSimBtn('초기 상태 (idle)', 'idle', false, null));
+      simBox.appendChild(simBtns);
+      container.appendChild(simBox);
 
-      const timelineWrap = el('div', 'student-action-timeline-gauge');
-      steps.forEach((s, idx) => {
-        let stepClass = 'step-pending';
-        let prefixIcon = '○';
-        let stateSuffix = '(대기)';
-        if (idx < currentStepIndex) {
-          stepClass = 'step-completed';
-          prefixIcon = '✔';
-          stateSuffix = '(완료)';
-        } else if (idx === currentStepIndex && curStatus !== 'idle') {
-          stepClass = 'step-active';
-          prefixIcon = '⏳';
-          stateSuffix = '(진행 중)';
+      const dynamicBody = el('div', 'student-action-dynamic-body');
+      container.appendChild(dynamicBody);
+
+      function updateActionView() {
+        dynamicBody.innerHTML = '';
+        const curStatus = state.status;
+        const observation = state.observation;
+        const receipt = state.receipt;
+        const target = state.target;
+        const event = state.event;
+        const actionId = state.actionId;
+        const confirmationExpiresAt = state.confirmationExpiresAt;
+        const message = state.message;
+        const error = state.error;
+
+        const titleRow = el('div', null);
+        titleRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;';
+        const titleEl = el('h4', 'student-action-title', '보안 조치 요청 상태 진행 현황');
+        titleEl.style.margin = '0';
+        titleRow.appendChild(titleEl);
+
+        const currentBadge = el('span', 'pc-badge-tag', `현재 상태: ${curStatus}`);
+        currentBadge.style.cssText = curStatus === 'succeeded' ? 'background:#d1fae5; color:#065f46; border:1px solid #a7f3d0; font-size:0.85rem; padding:4px 10px;' : 'background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.85rem; padding:4px 10px;';
+        titleRow.appendChild(currentBadge);
+        dynamicBody.appendChild(titleRow);
+
+        // 4단계 조치 상태 전이 타임라인 게이지 UI
+        const steps = [
+          { id: 'proposal', label: '1. 조치 제안' },
+          { id: 'approval', label: '2. 사용자 확인' },
+          { id: 'pending', label: '3. 서버 접수(ACK)' },
+          { id: 'effect', label: '4. 원천 효과 확인' }
+        ];
+
+        let currentStepIndex = 0;
+        if (curStatus === 'prepared') currentStepIndex = 1;
+        else if (curStatus === 'executing') currentStepIndex = 1;
+        else if (curStatus === 'pending') currentStepIndex = 2;
+        else if (curStatus === 'succeeded' && observation?.effectApplied === true) currentStepIndex = 3;
+        else if (curStatus === 'succeeded') currentStepIndex = 2;
+
+        const timelineWrap = el('div', 'student-action-timeline-gauge');
+        steps.forEach((s, idx) => {
+          let stepClass = 'step-pending';
+          let prefixIcon = '○';
+          let stateSuffix = '(대기)';
+          if (idx < currentStepIndex || (idx === currentStepIndex && curStatus === 'succeeded' && observation?.effectApplied === true)) {
+            stepClass = 'step-completed';
+            prefixIcon = '✔';
+            stateSuffix = '(완료)';
+          } else if (idx === currentStepIndex && curStatus !== 'idle') {
+            stepClass = 'step-active';
+            prefixIcon = '⏳';
+            stateSuffix = '(진행 중)';
+          }
+
+          const stepEl = el('div', `student-action-step ${stepClass}`);
+          stepEl.appendChild(el('span', 'step-number', `${prefixIcon} [${idx + 1}] `));
+          stepEl.appendChild(el('span', 'step-label', `${s.label} ${stateSuffix}`));
+          timelineWrap.appendChild(stepEl);
+        });
+        dynamicBody.appendChild(timelineWrap);
+
+        // 원천 효과 분리 경고 배지 시각화
+        const isEffectApplied = curStatus === 'succeeded' && observation?.effectApplied === true;
+        const warningBadgeWrap = el('div', 'student-action-badge-row');
+        if (isEffectApplied) {
+          warningBadgeWrap.appendChild(el('span', 'student-badge badge-success', '✔ 원천 효과 적용 확인 (effectApplied: true)'));
+          const guideSpan = el('span', null, '연동 시스템의 실제 네트워크 차단/격리 효과가 관측되었습니다.');
+          guideSpan.style.cssText = 'font-size:0.85rem; color:#15803d; font-weight:600;';
+          warningBadgeWrap.appendChild(guideSpan);
+        } else {
+          warningBadgeWrap.appendChild(el('span', 'student-badge badge-warning', '⚠ 원천 집행 미연동 (SDP 원천 조치 미연결 상태)'));
+          const guideSpan = el('span', null, '서버 접수(ACK) 또는 준비 단계이며, 실제 방화벽·SDP 게이트웨이 원천 차단기는 연동 전입니다.');
+          guideSpan.style.cssText = 'font-size:0.85rem; color:#c2410c;';
+          warningBadgeWrap.appendChild(guideSpan);
         }
+        dynamicBody.appendChild(warningBadgeWrap);
 
-        const stepEl = el('div', `student-action-step ${stepClass}`);
-        stepEl.appendChild(el('span', 'step-number', `${prefixIcon} [${idx + 1}] `));
-        stepEl.appendChild(el('span', 'step-label', `${s.label} ${stateSuffix}`));
-        timelineWrap.appendChild(stepEl);
-      });
-      container.appendChild(timelineWrap);
+        const effStatus = (curStatus === 'succeeded' && !isEffectApplied) ? 'unknown' : curStatus;
 
-      // [핵심 기능 2] 원천 효과 분리 경고 배지 시각화
-      const isEffectApplied = curStatus === 'succeeded' && observation?.effectApplied === true;
-      const warningBadgeWrap = el('div', 'student-action-badge-row');
-      if (isEffectApplied) {
-        warningBadgeWrap.appendChild(el('span', 'student-badge badge-success', '✔ 원천 효과 적용 확인 (effectApplied: true)'));
-      } else {
-        warningBadgeWrap.appendChild(el('span', 'student-badge badge-warning', '⚠ 원천 집행 미연동 (SDP 원천 조치 미연결 상태)'));
-      }
-      container.appendChild(warningBadgeWrap);
+        const statusDetailCard = el('div', null);
+        statusDetailCard.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin: 10px 0;';
 
-      // succeeded는 observation.effectApplied === true일 때만 효과 확인, 아니면 unknown(결과 불명)
-      const effStatus = (curStatus === 'succeeded' && !isEffectApplied) ? 'unknown' : curStatus;
+        if (effStatus === 'idle') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-idle', '상태: 아직 미실행 (idle)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '아직 보안 조치가 준비되거나 실행되지 않았습니다. 위의 시험 버튼(①~④)을 눌러 단계별 전이 흐름을 확인하세요.'));
+        } else if (effStatus === 'loading') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-loading', '상태: 조치 준비 또는 결과 조회 중 (loading)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '서버에서 조치 상태를 조회하고 있습니다. (완료 아님)'));
+        } else if (effStatus === 'prepared') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-prepared', '상태: 준비됨·사람 확인 대기 (prepared)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '사람 확인이 필요하며 아직 서버에 실행 요청을 전송하지 않았습니다. (미실행 안전 상태)'));
+          if (confirmationExpiresAt) statusDetailCard.appendChild(el('p', 'student-action-expiry', `확인 기한: ${confirmationExpiresAt}`));
+        } else if (effStatus === 'executing') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-executing', '상태: 서버에 전달 중 (executing)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '조치 실행 요청이 서버로 전송 중이며, 결과가 아직 확인되지 않았습니다. (완료 아님)'));
+        } else if (effStatus === 'pending') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-pending', '상태: 서버 접수·처리 중 (pending ACK)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '서버가 요청을 접수(ACK)하여 처리 중입니다. 접수 응답은 조치 효과가 아니며 완료가 아닙니다.'));
+        } else if (effStatus === 'succeeded') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-succeeded status-observed', '상태: 효과 확인 완료 (succeeded)'));
+          statusDetailCard.appendChild(el('p', 'student-action-effect', '연동 시스템의 실제 효과가 확인되었습니다. (effectApplied: true)'));
+          if (observation?.observedAt) statusDetailCard.appendChild(el('p', 'student-action-observed-at', `관측 시각: ${observation.observedAt}`));
+          if (receipt?.receiptId) statusDetailCard.appendChild(el('p', 'student-action-receipt-id', `영수증 ID: ${receipt.receiptId}`));
+        } else if (effStatus === 'denied') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-denied status-alert', '상태: 거절 (denied)'));
+          statusDetailCard.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템에서 조치를 거절했습니다.'}`));
+        } else if (effStatus === 'failed') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-failed status-alert', '상태: 실패 (failed)'));
+          statusDetailCard.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템 조치 실행에 실패했습니다.'}`));
+        } else if (effStatus === 'unknown') {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text status-unknown status-alert', '상태: 결과 불명 (unknown)'));
+          statusDetailCard.appendChild(el('p', 'status-note', '효과 없음으로도 성공으로도 단정하지 마세요. 결과만 재조회하세요.'));
+        } else {
+          statusDetailCard.appendChild(el('p', 'student-action-status-text', `상태: ${effStatus}`));
+        }
+        dynamicBody.appendChild(statusDetailCard);
 
-      if (effStatus === 'idle') {
-        container.appendChild(el('p', 'student-action-status-text status-idle', '상태: 아직 미실행 (idle)'));
-        container.appendChild(el('p', 'status-note', '아직 보안 조치가 준비되거나 실행되지 않았습니다.'));
-      } else if (effStatus === 'loading') {
-        container.appendChild(el('p', 'student-action-status-text status-loading', '상태: 조치 준비 또는 결과 조회 중 (loading)'));
-        container.appendChild(el('p', 'status-note', '서버에서 조치 상태를 조회하고 있습니다. (완료 아님)'));
-      } else if (effStatus === 'prepared') {
-        container.appendChild(el('p', 'student-action-status-text status-prepared', '상태: 준비됨·미실행 (prepared)'));
-        container.appendChild(el('p', 'status-note', '사람 확인이 필요하며 아직 서버에 실행 요청을 전송하지 않았습니다. (미실행)'));
-        if (confirmationExpiresAt) container.appendChild(el('p', 'student-action-expiry', `확인 기한: ${confirmationExpiresAt}`));
-      } else if (effStatus === 'executing') {
-        container.appendChild(el('p', 'student-action-status-text status-executing', '상태: 서버에 전달 중 (executing)'));
-        container.appendChild(el('p', 'status-note', '조치 실행 요청이 서버로 전송 중이며, 결과가 아직 확인되지 않았습니다. (완료 아님)'));
-      } else if (effStatus === 'pending') {
-        container.appendChild(el('p', 'student-action-status-text status-pending', '상태: 서버 접수·처리 중 (pending)'));
-        container.appendChild(el('p', 'status-note', '서버가 요청을 접수(ACK)하여 처리 중입니다. 접수 응답은 조치 효과가 아니며 완료가 아닙니다.'));
-      } else if (effStatus === 'succeeded') {
-        container.appendChild(el('p', 'student-action-status-text status-succeeded status-observed', '상태: 효과 확인 (succeeded)'));
-        container.appendChild(el('p', 'student-action-effect', '연동 시스템의 실제 효과가 확인되었습니다. (effectApplied: true)'));
-        if (observation?.observedAt) container.appendChild(el('p', 'student-action-observed-at', `관측 시각: ${observation.observedAt}`));
-        if (receipt?.receiptId) container.appendChild(el('p', 'student-action-receipt-id', `영수증 ID: ${receipt.receiptId}`));
-      } else if (effStatus === 'denied') {
-        container.appendChild(el('p', 'student-action-status-text status-denied status-alert', '상태: 거절 (denied)'));
-        container.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템에서 조치를 거절했습니다.'}`));
-      } else if (effStatus === 'failed') {
-        container.appendChild(el('p', 'student-action-status-text status-failed status-alert', '상태: 실패 (failed)'));
-        container.appendChild(el('p', 'status-note', `사유: ${message || error?.message || '연동 시스템 조치 실행에 실패했습니다.'}`));
-      } else if (effStatus === 'unknown') {
-        container.appendChild(el('p', 'student-action-status-text status-unknown status-alert', '상태: 결과 불명 (unknown)'));
-        container.appendChild(el('p', 'status-note', '효과 없음으로도 성공으로도 단정하지 마세요. 결과만 재조회하세요.'));
-      } else if (effStatus === 'expired') {
-        container.appendChild(el('p', 'student-action-status-text status-expired status-alert', '상태: 확인 기한 지남 (expired)'));
-        container.appendChild(el('p', 'status-note', '사람 확인 기한이 만료되었습니다. 처음부터 다시 준비하세요.'));
-      } else if (effStatus === 'error') {
-        const safeCode = error?.code || 'ERROR', safeMsg = error?.message || message || '요청이 처리되지 않았습니다.';
-        container.appendChild(el('p', 'student-action-status-text status-error status-alert', `상태: 요청 처리 안 됨 (error) [${safeCode}]`));
-        container.appendChild(el('p', 'status-note', `오류 내용: ${safeMsg}`));
-      } else {
-        container.appendChild(el('p', 'student-action-status-text', `상태: ${effStatus}`));
+        // 식별자 및 세부 정보
+        const dUl = el('ul', 'student-action-details');
+        dUl.style.cssText = 'background:#f1f5f9; padding:10px 20px; border-radius:6px; font-size:0.86rem; margin:10px 0; list-style:disc;';
+        if (event?.id) dUl.appendChild(el('li', null, `사건 ID: ${event.id} (${event.text || ''})`));
+        if (actionId) dUl.appendChild(el('li', null, `조치 ID: ${actionId}`));
+        if (target?.id) {
+          const genPart = target.generation !== undefined ? ` (세대: ${target.generation})` : '';
+          dUl.appendChild(el('li', null, `실제 대상: ${target.id}${genPart}`));
+        }
+        if (receipt?.requestId) dUl.appendChild(el('li', null, `요청 ID: ${receipt.requestId}`));
+        if (receipt?.receiptId) dUl.appendChild(el('li', null, `영수증 ID: ${receipt.receiptId}`));
+        if (receipt?.version !== undefined) dUl.appendChild(el('li', null, `버전: ${receipt.version}`));
+        dynamicBody.appendChild(dUl);
       }
 
-      // 식별자 및 세부 정보
-      const dUl = el('ul', 'student-action-details');
-      if (event?.id) dUl.appendChild(el('li', null, `사건 ID: ${event.id}`));
-      if (Array.isArray(event?.evidence) && event.evidence.length > 0) {
-        const evIds = event.evidence.map(e => e.id).filter(Boolean).join(', ');
-        if (evIds) dUl.appendChild(el('li', null, `근거 ID: ${evIds}`));
-      }
-      if (actionId) dUl.appendChild(el('li', null, `조치 ID: ${actionId}`));
-      if (target?.id) {
-        const genPart = target.generation !== undefined ? ` (세대: ${target.generation})` : '';
-        dUl.appendChild(el('li', null, `실제 대상: ${target.id}${genPart}`));
-      }
-      if (receipt?.requestId) dUl.appendChild(el('li', null, `요청 ID: ${receipt.requestId}`));
-      if (receipt?.receiptId) dUl.appendChild(el('li', null, `영수증 ID: ${receipt.receiptId}`));
-      if (receipt?.version !== undefined) dUl.appendChild(el('li', null, `버전: ${receipt.version}`));
-      if (dUl.children.length > 0) container.appendChild(dUl);
-
-      container.appendChild(el('p', 'status-note', '보안 조치 준비·집행·재조회는 제공 화면 버튼을 사용하세요. (학생 영역 임의 조치 버튼 미제공)'));
+      updateActionView();
       return container;
     },
   };

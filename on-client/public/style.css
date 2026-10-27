@@ -362,3 +362,18 @@ main:focus { outline: none; }
 .student-action-badge-row .student-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
 .student-action-badge-row .badge-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
 .student-action-badge-row .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+
+/* 7. 보안 기록 사건 및 조치 상세 스타일 */
+.student-item-source { padding: 4px 10px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; border-radius: 6px; white-space: nowrap; }
+.student-item-source.tag-demo { background: #fff4e0; color: #9a5b00; border: 1px solid #ffd591; }
+.student-item-source.tag-real { background: #e5f4ea; color: #1d7a3e; border: 1px solid #b7eb8f; }
+.student-event-text { flex: 1 1 520px; line-height: 1.8; letter-spacing: 0.025em; font-size: 0.95rem; color: var(--text, #1c2430); word-break: keep-all; overflow-wrap: break-word; }
+.student-action-title { font-size: 1.05rem; font-weight: 700; color: #1e3a8a; margin: 0 0 10px; }
+.student-action-step .step-number { font-weight: 800; font-size: 0.95rem; }
+.student-action-step .step-label { font-weight: 600; }
+.student-action-status-text { font-size: 0.95rem; font-weight: 700; margin: 6px 0; }
+.student-action-status-text.status-idle { color: #64748b; }
+.student-action-status-text.status-prepared { color: #d97706; }
+.student-action-status-text.status-executing { color: #2563eb; }
+.student-action-status-text.status-pending { color: #0284c7; }
+.student-action-status-text.status-succeeded { color: #16a34a; }
