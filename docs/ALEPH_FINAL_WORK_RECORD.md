@@ -84,7 +84,7 @@
 프로젝트 폴더에서 git rev-parse HEAD로 최종 커밋 번호를 확인하고, GitHub 저장소 화면에도 같은 커밋이 올라가 있는지 봅니다. 값을 찾지 못하면 미확인으로 둡니다. 포장을 해 봤다면 그때 만든 묶음의 경로만 적고, 다른 폴더의 파일과 섞지 않습니다.
 - 실행 환경(OS, Node 버전): Windows 11 (win32 x64), Node.js v24.19.0
 - 필요한 연결·파일·사전 설치물: Node.js 22 이상, Git, 기본 브라우저 (Chrome, Edge 등)
-- 최종 소스 커밋: `74b440c6dc0a1ef78745b715b6bee4325f2dcd80` (직전 코드 수정 커밋: `f2448a126749f6cb70d3f0d9c1c530a8256be428`)
+- 최종 소스 커밋: `13ad85a7e96063260e9955503640cd5712fafd51`
 - 실행 패키지 경로: `c:\Users\User\Desktop\sktaleph2\on-client` (매니페스트: `on-client/package-manifest.json`, 런처: `run-bankhar-b.bat`)
 - 소스와 패키지가 같은 커밋에서 나왔는지: 확인 완료 (동일 커밋 `f2448a126749f6cb70d3f0d9c1c530a8256be428` 기반 패키징 검증 완료)
 - 다시 실행한 명령: `npm run demo` (또는 `run-bankhar-b.bat` 더블클릭)
